@@ -1,0 +1,3 @@
+0,System Date,System Time,DTR Interface Version, Generator Name,Generator Version
+1,07/07/2026,16:51:46:496,1.0.26.0,SeeHawk Collect,6.10.0.4
+40,System Date,System Time,GPS Status,UTC Date,UTC Time,Fix Time,Latitude,Longitude,Alarm,Threshold

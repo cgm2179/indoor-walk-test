@@ -1,0 +1,11 @@
+!table
+!version 300
+!charset WindowsLatin1
+
+Definition Table
+  File "7th_Floor_2nd_Indoor_Walk_Test_V2.2.png"
+  Type "RASTER"
+  (-77.00705350,38.90368910) (974,47) Label "Pt 1",
+  (-77.00773090,38.90349770) (155,468) Label "Pt 2",
+  (-77.00743210,38.90356720) (557,268) Label "Pt 3"
+  CoordSys Earth Projection 1, 104
