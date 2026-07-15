@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Indoor NR Coverage — 7th Floor surrogate</title>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<style>
+  body { font-family: -apple-system, "Segoe UI", sans-serif; margin: 0;
+         background: #14161c; color: #e8eaf0; }
+  header { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 14px;
+           align-items: center; background: #1c1f28; }
+  header h1 { font-size: 15px; margin: 0 12px 0 0; font-weight: 600; }
+  label { font-size: 12px; color: #9aa1b0; }
+  select, input[type=range] { vertical-align: middle; }
+  select { background: #262a36; color: #e8eaf0; border: 1px solid #3a3f4e;
+           border-radius: 4px; padding: 3px 6px; font-size: 12px; }
+  #banner { display: none; padding: 8px 16px; font-size: 12.5px;
+            background: #4a3520; color: #ffd28a; }
+  #wrap { position: relative; margin: 12px auto; width: min(96vw, 1250px); }
+  canvas#view { width: 100%; image-rendering: pixelated; border-radius: 6px;
+                cursor: crosshair; display: block; }
+  #legend { display: flex; align-items: center; gap: 8px; margin: 6px auto;
+            width: min(96vw, 1250px); font-size: 11.5px; color: #9aa1b0; }
+  canvas#cbar { width: 260px; height: 14px; border-radius: 3px; }
+  #readout { margin-left: auto; font-family: ui-monospace, monospace;
+             font-size: 12px; color: #cdd3e0; white-space: pre; }
+  footer { padding: 8px 16px 20px; font-size: 11.5px; color: #6c7383;
+           max-width: 1250px; margin: 0 auto; line-height: 1.5; }
+  .sp { color: #59d98c; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>7th-floor coverage — U-Net surrogate <span class="sp" id="mode"></span></h1>
+  <label>metric
+    <select id="metric">
+      <option value="rsrp" selected>RSRP</option>
+      <option value="rsrq">RSRQ</option>
+      <option value="sinr">SINR</option>
+      <option value="rssi">RSSI</option>
+    </select>
+  </label>
+  <label>band <select id="band"></select></label>
+  <label>EIRP <input id="eirp" type="range" min="10" max="36" step="1" value="23">
+    <span id="eirpv">23</span> dBm</label>
+  <label><input id="tx2on" type="checkbox" checked> Tx2 (co-channel)</label>
+</header>
+<div id="banner"></div>
+<div id="wrap"><canvas id="view"></canvas></div>
+<div id="legend">
+  <span id="lglo"></span><canvas id="cbar" width="256" height="14"></canvas>
+  <span id="lghi"></span><span id="lgname"></span>
+  <span id="readout"></span>
+</div>
+<footer>
+  Drag the green transmitters. Path loss comes from the trained U-Net
+  (<code>model/surrogate_unet.onnx</code>) at 3500&nbsp;MHz; other bands are shifted by
+  20·log₁₀(f/3500) — exact for the distance term, approximate for wall losses.
+  RSRQ/RSSI assume a fully loaded serving cell (RSRQ ceiling −10.8 dB); SINR treats
+  the other transmitter as co-channel interference, NF&nbsp;=&nbsp;7&nbsp;dB.
+  Serve this folder with <code>python3 -m http.server</code> — file:// won't load the assets.
+</footer>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const state = { meta: null, wall: null, clutter: null, indoor: null,
+                walls: null, session: null, tx: [], plCache: new Map(),
+                drag: -1, metricArr: null };
+
+const RANGES = { rsrp: [-125, -55, "dBm"], rsrq: [-20, -10, "dB"],
+                 sinr: [-5, 30, "dB"], rssi: [-95, -25, "dBm"] };
+
+// Google turbo colormap, polynomial approximation
+function turbo(t) {
+  t = Math.min(1, Math.max(0, t));
+  const r = 34.61 + t*(1172.33 + t*(-10793.56 + t*(33300.12 + t*(-38394.49 + t*14825.05))));
+  const g = 23.31 + t*(557.33 + t*(1225.33 + t*(-3574.96 + t*(1073.77 + t*707.56))));
+  const b = 27.2 + t*(3211.1 + t*(-15327.97 + t*(27814.0 + t*(-22569.18 + t*6838.66))));
+  return [r, g, b].map(v => Math.min(255, Math.max(0, Math.round(v))));
+}
+
+async function fetchBin(url, Type) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url);
+  return new Type(await r.arrayBuffer());
+}
+
+function banner(msg) { const b = $("banner"); b.style.display = "block"; b.innerHTML = msg; }
+
+async function init() {
+  try {
+    state.meta = await (await fetch("assets/meta.json")).json();
+    state.wall = await fetchBin("assets/wall_map.bin", Float32Array);
+    state.clutter = await fetchBin("assets/clutter_map.bin", Float32Array);
+    state.indoor = await fetchBin("assets/indoor_mask.bin", Uint8Array);
+    state.walls = new Image(); state.walls.src = "assets/walls.png";
+    await state.walls.decode();
+  } catch (e) {
+    banner("Could not load <code>assets/</code> — run <code>python3 WEB/export_web_assets.py</code> " +
+           "and serve this folder over http (<code>python3 -m http.server</code>).");
+    return;
+  }
+  const m = state.meta;
+  state.tx = m.tx_default.map(t => ({ x: t.x, y: t.y }));
+  $("eirp").value = m.eirp_dbm;
+  m.bands.forEach((b, i) => $("band").add(new Option(b.label, i)));
+  $("band").value = 3;                                    // NR n77 default
+  const cv = $("view"); cv.width = m.W; cv.height = m.H;
+
+  try {                                                   // PLACEHOLDER: trained model
+    state.session = await ort.InferenceSession.create("model/surrogate_unet.onnx",
+                                                      { executionProviders: ["wasm"] });
+    $("mode").textContent = "· model loaded";
+  } catch (e) {
+    $("mode").textContent = "· FSPL preview (no model)";
+    banner("<b>Placeholder mode:</b> <code>model/surrogate_unet.onnx</code> not found — " +
+           "showing free-space-only path loss (walls ignored). Train in Colab " +
+           "(STEP_4/train_surrogate_colab.ipynb), run the ONNX-export cell, and put the " +
+           "file at <code>WEB/model/surrogate_unet.onnx</code>.");
+  }
+  wire();
+  await refresh();
+}
+
+function distChannel(tx) {
+  const { H, W, meters_per_px, x_scale } = state.meta;
+  const out = new Float32Array(H * W);
+  for (let y = 0, i = 0; y < H; y++)
+    for (let x = 0; x < W; x++, i++) {
+      const d = Math.hypot(x - tx.x, y - tx.y) * meters_per_px;
+      out[i] = Math.log10(Math.max(d, 1)) / x_scale[2];
+    }
+  return out;
+}
+
+async function pathloss3500(tx) {                          // per-Tx PL, cached
+  const key = tx.x.toFixed(1) + "," + tx.y.toFixed(1);
+  if (state.plCache.has(key)) return state.plCache.get(key);
+  const { H, W, x_scale, y_scale, meters_per_px } = state.meta;
+  let pl;
+  if (state.session) {
+    const n = H * W, input = new Float32Array(3 * n);
+    for (let i = 0; i < n; i++) input[i] = state.wall[i] / x_scale[0];
+    for (let i = 0; i < n; i++) input[n + i] = state.clutter[i] / x_scale[1];
+    input.set(distChannel(tx), 2 * n);
+    const t = new ort.Tensor("float32", input, [1, 3, H, W]);
+    const out = await state.session.run({ x: t });
+    const y = out[Object.keys(out)[0]].data;
+    pl = new Float32Array(n);
+    for (let i = 0; i < n; i++) pl[i] = y[i] * y_scale;
+  } else {                                                 // FSPL fallback
+    const fspl1m = 32.44 + 20 * Math.log10(3500) - 60;
+    pl = new Float32Array(H * W);
+    for (let y = 0, i = 0; y < H; y++)
+      for (let x = 0; x < W; x++, i++) {
+        const d = Math.max(Math.hypot(x - tx.x, y - tx.y) * meters_per_px, 1);
+        pl[i] = fspl1m + 20 * Math.log10(d);
+      }
+  }
+  if (state.plCache.size > 40) state.plCache.clear();
+  state.plCache.set(key, pl);
+  return pl;
+}
+
+function metricLayer(pls, band, eirp) {
+  const n = pls[0].length;
+  const shift = 20 * Math.log10(band.f_mhz / state.meta.train_freq_mhz);
+  const nRB = Math.floor(band.bw_mhz * 1000 * 0.9 / (12 * band.scs_khz));
+  const eirpRE = eirp - 10 * Math.log10(12 * nRB);
+  const noiseRE = -174 + 10 * Math.log10(band.scs_khz * 1000) + state.meta.noise_figure_db;
+  const noiseLin = 10 ** (noiseRE / 10);
+  const out = { rsrp: new Float32Array(n), rsrq: new Float32Array(n),
+                sinr: new Float32Array(n), rssi: new Float32Array(n) };
+  for (let i = 0; i < n; i++) {
+    let best = -1e9, sum = 0;
+    for (const pl of pls) {
+      const p = eirpRE - (pl[i] + shift);
+      sum += 10 ** (p / 10);
+      if (p > best) best = p;
+    }
+    const interf = sum - 10 ** (best / 10);
+    out.rsrp[i] = best;
+    out.sinr[i] = best - 10 * Math.log10(interf + noiseLin);
+    out.rssi[i] = 10 * Math.log10(12 * nRB) + 10 * Math.log10(sum + noiseLin);
+    out.rsrq[i] = 10 * Math.log10(nRB) + best - out.rssi[i];
+  }
+  return out;
+}
+
+async function refresh() {
+  const eirp = +$("eirp").value; $("eirpv").textContent = eirp;
+  const band = state.meta.bands[+$("band").value];
+  const txs = $("tx2on").checked ? state.tx : [state.tx[0]];
+  const pls = [];
+  for (const t of txs) pls.push(await pathloss3500(t));
+  state.metricArr = metricLayer(pls, band, eirp);
+  draw();
+}
+
+function draw() {
+  const { H, W } = state.meta;
+  const key = $("metric").value, [lo, hi, unit] = RANGES[key];
+  const arr = state.metricArr[key];
+  const cv = $("view"), cx = cv.getContext("2d");
+  const img = cx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) {
+    let r = 230, g = 231, b = 235;                        // outside: light gray
+    if (state.indoor[i]) [r, g, b] = turbo((arr[i] - lo) / (hi - lo));
+    img.data[4 * i] = r; img.data[4 * i + 1] = g;
+    img.data[4 * i + 2] = b; img.data[4 * i + 3] = 255;
+  }
+  cx.putImageData(img, 0, 0);
+  cx.drawImage(state.walls, 0, 0);
+  const txs = $("tx2on").checked ? state.tx : [state.tx[0]];
+  txs.forEach((t, i) => {
+    cx.beginPath(); cx.arc(t.x, t.y, 5, 0, 7);
+    cx.fillStyle = "#28c840"; cx.fill();
+    cx.lineWidth = 1.6; cx.strokeStyle = "#0b3d14"; cx.stroke();
+    cx.fillStyle = "#0b3d14"; cx.font = "bold 7px sans-serif";
+    cx.fillText(String(i + 1), t.x - 2, t.y + 2.5);
+  });
+  // colorbar + labels
+  const cb = $("cbar").getContext("2d");
+  for (let x = 0; x < 256; x++) {
+    const [r, g, b] = turbo(x / 255);
+    cb.fillStyle = `rgb(${r},${g},${b})`; cb.fillRect(x, 0, 1, 14);
+  }
+  $("lglo").textContent = lo; $("lghi").textContent = hi;
+  $("lgname").textContent = `${key.toUpperCase()} (${unit})`;
+}
+
+function canvasPos(ev) {
+  const cv = $("view"), r = cv.getBoundingClientRect();
+  return { x: (ev.clientX - r.left) * cv.width / r.width,
+           y: (ev.clientY - r.top) * cv.height / r.height };
+}
+
+function wire() {
+  ["metric"].forEach(id => $(id).addEventListener("change", draw));
+  ["band", "tx2on"].forEach(id => $(id).addEventListener("change", refresh));
+  $("eirp").addEventListener("input", refresh);
+  const cv = $("view");
+  cv.addEventListener("pointerdown", ev => {
+    const p = canvasPos(ev);
+    const txs = $("tx2on").checked ? state.tx : [state.tx[0]];
+    state.drag = txs.findIndex(t => Math.hypot(t.x - p.x, t.y - p.y) < 12);
+    if (state.drag >= 0) cv.setPointerCapture(ev.pointerId);
+  });
+  cv.addEventListener("pointermove", ev => {
+    const p = canvasPos(ev);
+    if (state.drag >= 0) {
+      const { W, H } = state.meta;
+      state.tx[state.drag].x = Math.min(W - 1, Math.max(0, p.x));
+      state.tx[state.drag].y = Math.min(H - 1, Math.max(0, p.y));
+      draw();                                             // marker follows live
+    } else if (state.metricArr) {
+      const i = Math.round(p.y) * state.meta.W + Math.round(p.x);
+      const key = $("metric").value, unit = RANGES[key][2];
+      const mpp = state.meta.meters_per_px;
+      if (i >= 0 && i < state.meta.W * state.meta.H)
+        $("readout").textContent =
+          `(${(p.x * mpp).toFixed(1)}, ${(p.y * mpp).toFixed(1)}) m   ` +
+          `${key.toUpperCase()} ${state.metricArr[key][i].toFixed(1)} ${unit}`;
+    }
+  });
+  cv.addEventListener("pointerup", () => {
+    if (state.drag >= 0) { state.drag = -1; refresh(); }  // infer on release
+  });
+}
+
+init();
+</script>
+</body>
+</html>

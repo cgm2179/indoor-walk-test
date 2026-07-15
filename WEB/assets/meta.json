@@ -1,0 +1,51 @@
+{
+  "H": 256,
+  "W": 568,
+  "meters_per_px": 0.1358528649408914,
+  "x_scale": [
+    20.0,
+    0.3,
+    3.0
+  ],
+  "y_scale": 150.0,
+  "train_freq_mhz": 3500.0,
+  "eirp_dbm": 23.0,
+  "noise_figure_db": 7.0,
+  "tx_default": [
+    {
+      "x": 318.1666666666667,
+      "y": 201.66666666666666
+    },
+    {
+      "x": 331.5,
+      "y": 201.75
+    }
+  ],
+  "bands": [
+    {
+      "label": "LTE B71 617 MHz",
+      "f_mhz": 617.0,
+      "bw_mhz": 10,
+      "scs_khz": 15
+    },
+    {
+      "label": "LTE B2 1960 MHz",
+      "f_mhz": 1960.0,
+      "bw_mhz": 20,
+      "scs_khz": 15
+    },
+    {
+      "label": "NR n41 2506 MHz",
+      "f_mhz": 2506.0,
+      "bw_mhz": 60,
+      "scs_khz": 30
+    },
+    {
+      "label": "NR n77 3750 MHz",
+      "f_mhz": 3750.0,
+      "bw_mhz": 100,
+      "scs_khz": 30
+    }
+  ],
+  "note": "band shift applied client-side: PL_f = PL_3500 + 20log10(f/3500) (exact for distance, approximate for wall slope)"
+}
