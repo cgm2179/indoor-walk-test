@@ -1,0 +1,13 @@
+{
+  "note": "pixel coords; y down",
+  "transmitters": [
+    {
+      "x": 636,
+      "y": 523
+    },
+    {
+      "x": 663,
+      "y": 523
+    }
+  ]
+}

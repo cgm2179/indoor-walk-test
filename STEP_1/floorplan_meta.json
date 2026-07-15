@@ -1,0 +1,11 @@
+{
+  "source": "/mnt/user-data/uploads/IMG_1863.png",
+  "grid_shape": [
+    752,
+    1333
+  ],
+  "scale_px_per_m": 12.3,
+  "scale_status": "ESTIMATE from furniture dimensions - confirm one real measurement",
+  "loss_semantics": "loss_db is per WALL CROSSING: count contiguous runs of a material along a ray as ONE crossing, not per cell",
+  "frequency_note": "loss values ~2.4-5 GHz band; scale for 3.5 GHz NR if needed"
+}

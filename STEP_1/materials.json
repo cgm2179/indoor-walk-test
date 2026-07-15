@@ -1,0 +1,26 @@
+{
+  "0": {
+    "name": "air",
+    "loss_db": 0.0
+  },
+  "1": {
+    "name": "drywall_partition",
+    "loss_db": 4.0
+  },
+  "2": {
+    "name": "concrete_or_masonry",
+    "loss_db": 15.0
+  },
+  "3": {
+    "name": "core_service_area",
+    "loss_db": 20.0
+  },
+  "4": {
+    "name": "furniture_clutter",
+    "loss_db": 1.0
+  },
+  "5": {
+    "name": "exterior_envelope",
+    "loss_db": 15.0
+  }
+}
