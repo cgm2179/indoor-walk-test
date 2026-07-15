@@ -108,6 +108,11 @@
       </div>
 
       <div class="field">
+        <label for="pci">PCI</label>
+        <select id="pci"></select>
+      </div>
+
+      <div class="field">
         <label for="metric">Metric</label>
         <select id="metric">
           <option value="rsrp">RSRP (dBm)</option>
@@ -150,6 +155,7 @@
     const coverageEl = document.getElementById('coverage');
     const networkEl = document.getElementById('network');
     const bandEl = document.getElementById('band');
+    const pciEl = document.getElementById('pci');
     const vminEl = document.getElementById('vmin');
     const vmaxEl = document.getElementById('vmax');
     const sizeEl = document.getElementById('size');
@@ -166,6 +172,14 @@
     function bandOptions(networkValue) {
       const scoped = records.filter(r => networkValue === 'all' || r.network === networkValue);
       return uniqueSorted(scoped.map(r => r.band).filter(v => Number.isFinite(v)));
+    }
+
+    function pciOptions(networkValue, bandValue) {
+      const scoped = records.filter(r =>
+        (networkValue === 'all' || r.network === networkValue) &&
+        (bandValue === 'all' || String(r.band) === bandValue)
+      );
+      return uniqueSorted(scoped.map(r => r.pci).filter(v => Number.isFinite(v)));
     }
 
     function populateNetworks() {
@@ -206,15 +220,36 @@
       bandEl.value = [...bandEl.options].some(o => o.value === current) ? current : 'all';
     }
 
+    function populatePcis() {
+      const current = pciEl.value || 'all';
+      pciEl.innerHTML = '';
+
+      const allOpt = document.createElement('option');
+      allOpt.value = 'all';
+      allOpt.textContent = 'All';
+      pciEl.appendChild(allOpt);
+
+      for (const pci of pciOptions(networkEl.value || 'all', bandEl.value || 'all')) {
+        const opt = document.createElement('option');
+        opt.value = String(pci);
+        opt.textContent = `PCI ${pci}`;
+        pciEl.appendChild(opt);
+      }
+
+      pciEl.value = [...pciEl.options].some(o => o.value === current) ? current : 'all';
+    }
+
     function filtered(metric) {
       const selectedNetwork = networkEl.value || 'all';
       const selectedBand = bandEl.value || 'all';
+      const selectedPci = pciEl.value || 'all';
       return records.filter(r =>
         Number.isFinite(r.px) &&
         Number.isFinite(r.py) &&
         Number.isFinite(r[metric]) &&
         (selectedNetwork === 'all' || r.network === selectedNetwork) &&
-        (selectedBand === 'all' || String(r.band) === selectedBand)
+        (selectedBand === 'all' || String(r.band) === selectedBand) &&
+        (selectedPci === 'all' || String(r.pci) === selectedPci)
       );
     }
 
@@ -316,12 +351,13 @@
       const avg = n ? (vals.reduce((a,b) => a+b, 0) / n).toFixed(2) : 'NA';
       const networkText = networkEl.value === 'all' ? 'All' : networkEl.value;
       const bandText = bandEl.value === 'all' ? 'All' : `Band ${bandEl.value}`;
+      const pciText = pciEl.value === 'all' ? 'All' : `PCI ${pciEl.value}`;
       const modeText = coverageEl.value;
       statsEl.innerHTML = `
         <div>Points: <b>${n}</b></div>
         <div>Metric: <b>${metric.toUpperCase()}</b></div>
         <div>Mode: <b>${modeText}</b></div>
-        <div>Network / Band: <b>${networkText} / ${bandText}</b></div>
+        <div>Network / Band / PCI: <b>${networkText} / ${bandText} / ${pciText}</b></div>
         <div>Min / Max: <b>${min} / ${max}</b></div>
         <div>Mean: <b>${avg}</b></div>
       `;
@@ -401,7 +437,7 @@
       const layout = {
         margin: {l: 12, r: 16, t: 40, b: 12},
         title: {
-          text: `${(networkEl.value === 'all' ? 'All Networks' : networkEl.value)} · ${(bandEl.value === 'all' ? 'All Bands' : ('Band ' + bandEl.value))} · ${metric.toUpperCase()}`,
+          text: `${(networkEl.value === 'all' ? 'All Networks' : networkEl.value)} · ${(bandEl.value === 'all' ? 'All Bands' : ('Band ' + bandEl.value))} · ${(pciEl.value === 'all' ? 'All PCI' : ('PCI ' + pciEl.value))} · ${metric.toUpperCase()}`,
           x: 0.02
         },
         xaxis: {visible: false, range: [0, 1150] },
@@ -435,11 +471,18 @@
     coverageEl.addEventListener('change', render);
     networkEl.addEventListener('change', () => {
       populateBands();
+      populatePcis();
       const data = filtered(metricEl.value);
       applyDefaults(metricEl.value, data);
       render();
     });
     bandEl.addEventListener('change', () => {
+      populatePcis();
+      const data = filtered(metricEl.value);
+      applyDefaults(metricEl.value, data);
+      render();
+    });
+    pciEl.addEventListener('change', () => {
       const data = filtered(metricEl.value);
       applyDefaults(metricEl.value, data);
       render();
@@ -450,6 +493,7 @@
 
     populateNetworks();
     populateBands();
+    populatePcis();
     applyDefaults(metricEl.value, filtered(metricEl.value));
     render();
   </script>
