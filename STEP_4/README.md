@@ -15,9 +15,14 @@ log10 distance), `y` = 257×575 float16 path loss, plus the Tx position and
 indoor mask. The `dataset/` folder is gitignored — regenerate at will (fixed
 seed, deterministic).
 
-Training (needs PyTorch, ideally GPU — Colab works): standard U-Net,
-input `x`, regress `y`, L1 loss masked to indoor cells, ~80/20 split. The
-payoff: millisecond heatmaps for any Tx position, enabling interactive
+Training: **`train_surrogate_colab.ipynb` is ready to run on Colab** —
+open it via
+[colab.research.google.com/github](https://colab.research.google.com/github/)
+(sign in to GitHub and tick *Include private repos*, then pick
+`cgm2179/indoor-walk-test` → `STEP_4/train_surrogate_colab.ipynb`), switch
+the runtime to GPU, and run all cells. It clones the repo, generates 400
+samples (~6 min), and trains a ~2M-param U-Net with indoor-masked L1 loss.
+The payoff: millisecond heatmaps for any Tx position, enabling interactive
 placement optimization (drag-the-transmitter in the browser, Step-2 quality).
 
 ## 4c. Calibration against walk-test data — BLOCKED, here's why and the fix
