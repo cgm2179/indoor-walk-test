@@ -1,0 +1,20 @@
+{
+  "comment": "Hand-labeled material corrections, applied AFTER auto-classification. The drawing cannot distinguish glass from drywall (both are thin lines), so regions known from walking the floor are re-labeled here. Each override re-labels ONLY the material ids listed in applies_to inside its region, so rough boxes are safe: air and furniture are untouched unless listed. Coordinates are image pixels, y down. rect_px = [x0, y0, x1, y1]; polygon_px = [[x, y], ...] also supported.",
+  "material_ids": {
+    "1": "drywall_partition",
+    "2": "concrete_or_masonry",
+    "3": "core_service_area",
+    "4": "furniture_soft_wood",
+    "5": "exterior_glass_curtain_wall",
+    "6": "glass_partition",
+    "7": "cubicle_aluminum_panel"
+  },
+  "overrides": [
+    {
+      "label": "lunch room enclosure (center of floor) - ROUGH BOX, adjust to the real extent",
+      "material": 6,
+      "applies_to": [1, 2, 3],
+      "rect_px": [515, 185, 635, 320]
+    }
+  ]
+}

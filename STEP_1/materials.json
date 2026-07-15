@@ -16,11 +16,19 @@
     "loss_db": 20.0
   },
   "4": {
-    "name": "furniture_clutter",
-    "loss_db": 1.0
+    "name": "furniture_soft_wood",
+    "loss_db": 0.5
   },
   "5": {
-    "name": "exterior_envelope",
-    "loss_db": 15.0
+    "name": "exterior_glass_curtain_wall",
+    "loss_db": 3.0
+  },
+  "6": {
+    "name": "glass_partition",
+    "loss_db": 2.0
+  },
+  "7": {
+    "name": "cubicle_aluminum_panel",
+    "loss_db": 6.0
   }
 }

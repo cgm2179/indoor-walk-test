@@ -21,6 +21,7 @@ from `<image>.TAB` automatically, or pass `--tab`.
 | File | What it is |
 |---|---|
 | `rasterize_floorplan.py` | Classical-CV classifier (threshold → component-size → thickness/density heuristics). All tunables in `PARAMS` at the top. |
+| `material_overrides.json` | Hand-labeled corrections for what the drawing can't show (glass vs drywall are identical thin lines). Applied automatically after classification. |
 | `material_grid.npy` | 515 × 1150 `uint8` grid, one material id per cell (`np.load` it) |
 | `materials.json` | material id → name + per-crossing penetration loss (dB) |
 | `transmitters.json` | Tx pins in float px, local ENU meters, lon/lat, and EPSG:3857 |
@@ -42,18 +43,34 @@ from `<image>.TAB` automatically, or pass `--tab`.
 
 ## Material classes / losses
 
-| id | class | loss per crossing |
-|---|---|---|
-| 0 | air | 0 dB |
-| 1 | drywall partition | 4 dB |
-| 2 | concrete / masonry (thick walls, columns) | 15 dB |
-| 3 | core service area (elevators, stairs, WC) | 20 dB |
-| 4 | furniture / clutter | 1 dB |
-| 5 | exterior envelope | 15 dB (use ~3 dB if glass curtain wall) |
+Loss values reflect walked ground truth for this building (glass exterior and
+lunch room, drywall-wrapped columns, soft/wood furniture, aluminum cubicle
+panels), not generic assumptions.
+
+| id | class | loss per crossing | assigned by |
+|---|---|---|---|
+| 0 | air | 0 dB | — |
+| 1 | drywall partition (incl. columns, bathroom doors) | 4 dB | auto |
+| 2 | concrete / masonry (thick shaft walls) | 15 dB | auto |
+| 3 | core service area (elevators, stairs, WC) | 20 dB | auto |
+| 4 | furniture, soft / wood (couches, chairs, desks) | 0.5 dB | auto |
+| 5 | exterior glass curtain wall | 3 dB | auto |
+| 6 | glass partition (lunch room, glass doors) | 2 dB | overrides only |
+| 7 | cubicle aluminum panel | 6 dB | overrides only |
+
+The auto-classifier cannot tell glass from drywall (both are thin lines in a
+CAD drawing) — ids 6 and 7 exist so `material_overrides.json` can re-label
+regions you know from walking the floor. Add an entry with a rough
+`rect_px: [x0, y0, x1, y1]` (or `polygon_px`) and the ids it `applies_to`;
+only those ids inside the box are re-labeled, so air and furniture are safe.
+The seeded lunch-room box is a rough guess — adjust its extent.
 
 Loss values are for the 2.4–5 GHz band; rescale for 3.5 GHz NR if needed.
 `loss_db` is per **wall crossing** — a contiguous run of one material along a
-ray counts once, not per cell.
+ray counts once, not per cell. Note: if the exterior glazing is low-E
+(metal-coated, common in modern offices), outdoor↔indoor loss is far higher
+than 3 dB (20+ dB) — irrelevant for indoor-only simulation, but it matters if
+you ever model street-level donors.
 
 ## Known limitations
 

@@ -45,13 +45,20 @@ PARAMS = dict(
 )
 
 # Material table (per-crossing penetration loss, dB), ~2.4-5 GHz band.
+# Loss values reflect walked ground truth for this building: exterior and
+# lunch-room enclosure are glass, columns are drywall-wrapped, furniture is
+# soft/wood, cubicle partitions are aluminum-skinned. Ids 6 and 7 are never
+# assigned by the auto-classifier (glass and drywall are indistinguishable
+# thin lines in the drawing) -- they come from material_overrides.json.
 MATERIALS = {
-    0: dict(name="air",                loss_db=0.0,  color=(255, 255, 255)),
-    1: dict(name="drywall_partition",  loss_db=4.0,  color=(245, 166, 35)),
+    0: dict(name="air",                 loss_db=0.0,  color=(255, 255, 255)),
+    1: dict(name="drywall_partition",   loss_db=4.0,  color=(245, 166, 35)),
     2: dict(name="concrete_or_masonry", loss_db=15.0, color=(64, 64, 64)),
-    3: dict(name="core_service_area",  loss_db=20.0, color=(200, 30, 30)),
-    4: dict(name="furniture_clutter",  loss_db=1.0,  color=(190, 210, 255)),
-    5: dict(name="exterior_envelope",  loss_db=15.0, color=(30, 60, 160)),
+    3: dict(name="core_service_area",   loss_db=20.0, color=(200, 30, 30)),
+    4: dict(name="furniture_soft_wood", loss_db=0.5,  color=(190, 210, 255)),
+    5: dict(name="exterior_glass_curtain_wall", loss_db=3.0, color=(30, 60, 160)),
+    6: dict(name="glass_partition",     loss_db=2.0,  color=(0, 185, 205)),
+    7: dict(name="cubicle_aluminum_panel", loss_db=6.0, color=(150, 150, 165)),
 }
 
 WGS84_A = 6378137.0
@@ -245,11 +252,36 @@ def classify(rgb, p=PARAMS):
     # ---- 8. Assemble grid (later assignments override earlier) ----------------
     grid = np.zeros((H, W), np.uint8)                  # 0 air
     grid[furn | small_dark] = 4                        # furniture / clutter / text
-    grid[structural] = 1                               # drywall by default
-    grid[thick | columns] = 2                          # concrete: thick walls + columns
+    grid[structural | columns] = 1                     # drywall (columns are
+                                                       #   drywall-wrapped here)
+    grid[thick] = 2                                    # concrete: thick shaft walls
     grid[hatched & structural] = 3                     # core service areas
-    grid[exterior] = 5                                 # exterior envelope
+    grid[exterior] = 5                                 # exterior envelope (glass)
     return grid, tx
+
+
+def apply_overrides(grid, overrides_path):
+    """Hand-labeled material corrections for what the drawing can't show
+    (glass vs drywall look identical as lines). Each entry re-labels only the
+    ids in applies_to inside its region, so rough boxes are safe: air and
+    furniture stay untouched unless explicitly listed."""
+    spec = json.loads(Path(overrides_path).read_text())
+    H, W = grid.shape
+    for ov in spec.get("overrides", []):
+        region = np.zeros((H, W), bool)
+        if "rect_px" in ov:
+            x0, y0, x1, y1 = ov["rect_px"]
+            region[max(0, int(y0)):int(y1) + 1, max(0, int(x0)):int(x1) + 1] = True
+        elif "polygon_px" in ov:
+            from matplotlib.path import Path as MplPath
+            yy, xx = np.mgrid[0:H, 0:W]
+            pts = np.column_stack([xx.ravel(), yy.ravel()])
+            region = MplPath(ov["polygon_px"]).contains_points(pts).reshape(H, W)
+        mask = region & np.isin(grid, ov.get("applies_to", [1, 2, 3, 5]))
+        grid[mask] = ov["material"]
+        print(f"  override '{ov.get('label', '?')}': "
+              f"{int(mask.sum())} px -> {MATERIALS[ov['material']]['name']}")
+    return grid
 
 
 # --------------------------------------------------------------------------
@@ -258,6 +290,9 @@ def main():
     ap.add_argument("image", help="floor plan PNG")
     ap.add_argument("--tab", help="MapInfo .TAB georeference (defaults to <image>.TAB)")
     ap.add_argument("--out", default=".", help="output directory (default: cwd)")
+    ap.add_argument("--overrides",
+                    help="material overrides JSON (defaults to "
+                         "<out>/material_overrides.json when present)")
     args = ap.parse_args()
 
     img_path = Path(args.image)
@@ -268,6 +303,10 @@ def main():
     rgb = np.asarray(Image.open(img_path).convert("RGB"))
     grid, tx = classify(rgb)
     H, W = grid.shape
+
+    ov_path = Path(args.overrides) if args.overrides else out / "material_overrides.json"
+    if ov_path.exists():
+        grid = apply_overrides(grid, ov_path)
 
     geo, M_local, M_merc, M_lonlat = build_georef(tab_path)
     for t in tx:
