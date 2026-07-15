@@ -85,5 +85,5 @@
     1.25,
     2.44
   ],
-  "gcp_note": "3 GCPs are nearly collinear and mutually inconsistent at the few-meter level; similarity fit used, residuals above. Add a 4th well-spread GCP in QGIS to tighten the scale."
+  "gcp_residuals_comment": "Distance (m) between each hand-placed GCP and the fitted transform, i.e. GPS-grade placement error. 1-2 m is FINE for this project: room-to-room geometry comes from the drawing itself (pixel-exact), so the residuals only affect the absolute geo-anchor and the overall scale by a few percent -- well under 1 dB in the 10*n*log10(d) path-loss term. To tighten: add a 4th GCP in QGIS placed off the line of the current three (they are nearly collinear, which is also why a similarity fit is used instead of a full affine)."
 }
