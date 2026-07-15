@@ -1,3 +1,4 @@
 .DS_Store
 STEP_1.zip
 STEP_4/dataset/
+__pycache__/
