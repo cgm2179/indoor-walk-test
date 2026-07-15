@@ -49,3 +49,14 @@ floor plate.
 openings are sealed by wall consolidation. The visible ray streaks in the
 heatmaps are the signature of this. STEP_3 (ray tracing / FDTD) is the
 physics upgrade; STEP_4 calibrates the loss table against measurements.
+
+## Multi-band metrics + simulated walk (`multiband_metrics.py`)
+
+Computes RSRP / RSRQ / SINR / RSSI maps for the four band/protocol combos the
+scanner saw (LTE B71/B2, NR n41/n77), with the two Tx modeled co-channel at
+full load (the non-serving cell is interference — that's what shapes SINR).
+FSPL, material-loss slope, and per-RE noise all scale with frequency and
+subcarrier spacing. Also simulates a 145 m corridor-loop walk at 1.4 m/s:
+`multiband/walk_trace.csv`, `walk_trace_all_bands.png`, and an animated GIF
+of the receiver moving with live metric readouts. RSRQ/RSSI assume a fully
+loaded serving cell (RSRQ ceiling −10.8 dB); NF = 7 dB. Runs in ~70 s.

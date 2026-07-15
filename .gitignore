@@ -2,3 +2,4 @@
 STEP_1.zip
 STEP_4/dataset/
 __pycache__/
+STEP_2/multiband/*.npz
