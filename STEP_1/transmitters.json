@@ -1,13 +1,25 @@
 {
-  "note": "pixel coords; y down",
+  "note": "x_px/y_px: float pixel coords, y down. x_m/y_m: local ENU meters (east/north) about origin_lonlat in floorplan_meta.json. mercator_*: EPSG:3857, same frame as the walk-test CSV.",
   "transmitters": [
     {
-      "x": 636,
-      "y": 523
+      "x_px": 636.3333333333334,
+      "y_px": 403.3333333333333,
+      "x_m": 3.7736504591469355,
+      "y_m": -10.233668424939069,
+      "lon": -77.00736199662039,
+      "lat": 38.90349248278511,
+      "mercator_x": -8572420.3183913,
+      "mercator_y": 4707857.14767688
     },
     {
-      "x": 663,
-      "y": 523
+      "x_px": 663.0,
+      "y_px": 403.5,
+      "x_m": 5.568756242715388,
+      "y_m": -10.476135374000783,
+      "lon": -77.00734130229027,
+      "lat": 38.90349029866662,
+      "mercator_x": -8572418.01166182,
+      "mercator_y": 4707856.836104345
     }
   ]
 }

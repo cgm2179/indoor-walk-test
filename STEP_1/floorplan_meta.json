@@ -1,11 +1,89 @@
 {
-  "source": "/mnt/user-data/uploads/IMG_1863.png",
+  "source": "7th_Floor_2nd_Indoor_Walk_Test_V2.2.png",
+  "georeference": "7th_Floor_2nd_Indoor_Walk_Test_V2.2.TAB",
   "grid_shape": [
-    752,
-    1333
+    515,
+    1150
   ],
-  "scale_px_per_m": 12.3,
-  "scale_status": "ESTIMATE from furniture dimensions - confirm one real measurement",
+  "crs_note": "local ENU meters via WGS84 equirectangular about origin_lonlat; EPSG:3857 lengths are inflated by ~1/cos(lat) (~1.285 here) -- use the local-meter affine for physical distances",
+  "scale_status": "measured from the 3 QGIS ground control points in the .TAB (float meters, no integer-pixel estimate)",
   "loss_semantics": "loss_db is per WALL CROSSING: count contiguous runs of a material along a ray as ONE crossing, not per cell",
-  "frequency_note": "loss values ~2.4-5 GHz band; scale for 3.5 GHz NR if needed"
+  "frequency_note": "loss values ~2.4-5 GHz band; scale for 3.5 GHz NR if needed",
+  "gcps": [
+    {
+      "label": "Pt 1",
+      "px": [
+        974.0,
+        47.0
+      ],
+      "lon": -77.0070535,
+      "lat": 38.9036891
+    },
+    {
+      "label": "Pt 2",
+      "px": [
+        155.0,
+        468.0
+      ],
+      "lon": -77.0077309,
+      "lat": 38.9034977
+    },
+    {
+      "label": "Pt 3",
+      "px": [
+        557.0,
+        268.0
+      ],
+      "lon": -77.0074321,
+      "lat": 38.9035672
+    }
+  ],
+  "origin_lonlat": [
+    -77.0074055,
+    38.90358466666667
+  ],
+  "affine_px_to_local_m": [
+    [
+      0.06737066340846407,
+      -0.008671443943511433,
+      -35.59906596588942
+    ],
+    [
+      -0.008671443943511433,
+      -0.06737066340846407,
+      22.457094645862547
+    ]
+  ],
+  "affine_px_to_mercator": [
+    [
+      0.08657199862422248,
+      -0.011142895069864786,
+      -8572470.912738748
+    ],
+    [
+      -0.011142895069864786,
+      -0.08657199862422248,
+      4707899.155645221
+    ]
+  ],
+  "affine_px_to_lonlat": [
+    [
+      7.766621675206363e-07,
+      -9.996609960434447e-08,
+      -77.00781589298614
+    ],
+    [
+      -7.811151663352936e-08,
+      -6.068683289338282e-07,
+      38.90378695797287
+    ]
+  ],
+  "meters_per_px": 0.0679264324704457,
+  "map_rotation_deg": -7.334355724490693,
+  "gcp_residuals_m": [
+    1.19,
+    1.25,
+    2.44
+  ],
+  "gcp_note": "3 GCPs are nearly collinear and mutually inconsistent at the few-meter level; similarity fit used, residuals above. Add a 4th well-spread GCP in QGIS to tighten the scale."
 }
