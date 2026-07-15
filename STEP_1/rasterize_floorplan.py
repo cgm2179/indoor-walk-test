@@ -55,7 +55,11 @@ MATERIALS = {
     1: dict(name="drywall_partition",   loss_db=4.0,  color=(245, 166, 35)),
     2: dict(name="concrete_or_masonry", loss_db=15.0, color=(64, 64, 64)),
     3: dict(name="core_service_area",   loss_db=20.0, color=(200, 30, 30)),
-    4: dict(name="furniture_soft_wood", loss_db=0.5,  color=(190, 210, 255)),
+    # furniture attenuates per METER of path through it (bulk clutter), not per
+    # crossing -- a ray through open-plan office crosses dozens of drawn
+    # objects and per-crossing counting would wildly over-count.
+    4: dict(name="furniture_soft_wood", loss_db=0.0, loss_per_m_db=0.3,
+            color=(190, 210, 255)),
     5: dict(name="exterior_glass_curtain_wall", loss_db=3.0, color=(30, 60, 160)),
     6: dict(name="glass_partition",     loss_db=2.0,  color=(0, 185, 205)),
     7: dict(name="cubicle_aluminum_panel", loss_db=6.0, color=(150, 150, 165)),
@@ -236,9 +240,13 @@ def classify(rgb, p=PARAMS):
     thick = ndimage.binary_dilation(dist >= p["thick_radius_px"], square(3)) & structural
 
     # ---- 6. Hatched cores (elevator shafts / stairs / WC) --------------------
+    # The closing fills the white gaps between hatch strokes so a core becomes
+    # ONE solid region: a ray must see one 20 dB crossing per shaft, not one
+    # per hatch line (which would add hundreds of dB).
     dens = ndimage.uniform_filter(dark.astype(float), size=p["hatch_win"])
     hatched = (dens > p["hatch_density"]) & dark
     hatched = ndimage.binary_closing(hatched, square(9))
+    hatched = ndimage.binary_opening(hatched, square(3))   # trim slivers
 
     # ---- 7. Exterior envelope: flood the background from image borders -------
     openish = gray > p["open_bg_thresh"]
@@ -255,7 +263,7 @@ def classify(rgb, p=PARAMS):
     grid[structural | columns] = 1                     # drywall (columns are
                                                        #   drywall-wrapped here)
     grid[thick] = 2                                    # concrete: thick shaft walls
-    grid[hatched & structural] = 3                     # core service areas
+    grid[hatched] = 3                                  # core service areas (solid)
     grid[exterior] = 5                                 # exterior envelope (glass)
     return grid, tx
 
@@ -316,7 +324,8 @@ def main():
 
     np.save(out / "material_grid.npy", grid)
     (out / "materials.json").write_text(json.dumps(
-        {str(k): dict(name=v["name"], loss_db=v["loss_db"])
+        {str(k): dict(name=v["name"], loss_db=v["loss_db"],
+                      loss_per_m_db=v.get("loss_per_m_db", 0.0))
          for k, v in MATERIALS.items()}, indent=2))
     (out / "transmitters.json").write_text(json.dumps(dict(
         note="x_px/y_px: float pixel coords, y down. x_m/y_m: local ENU meters "

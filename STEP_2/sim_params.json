@@ -1,0 +1,11 @@
+{
+  "model": "log-distance + Motley-Keenan multi-wall",
+  "freq_mhz": 3500.0,
+  "n_exp": 2.0,
+  "eirp_dbm": 23.0,
+  "wall_sat_db": 60.0,
+  "fspl_1m_db": 43.32,
+  "step_px": 0.6,
+  "meters_per_px": 0.0679264324704457,
+  "comment": "pathloss_tx<i>.npy is PL in dB; received power = eirp_dbm - PL. Wall crossings count contiguous material runs once; furniture attenuates per meter of path. n=2 (free space) because walls are charged explicitly -- raising n as well double-counts. 2D model: no reflections/diffraction/corridor waveguiding, so deep multi-wall shadows are pessimistic; no floor/ceiling paths."
+}
