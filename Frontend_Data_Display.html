@@ -251,6 +251,7 @@
         <button type="button" class="tab-btn active" id="tabMapBtn">Map Coverage</button>
         <button type="button" class="tab-btn" id="tabHistogramBtn">Histogram</button>
         <button type="button" class="tab-btn" id="tabTimeBtn">Time Elapsed Playback</button>
+        <button type="button" class="tab-btn" id="tabSimBtn">Simulator</button>
       </div>
 
       <div id="mapTab" class="tab-content">
@@ -323,6 +324,124 @@
             <tbody id="playbackTableBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <div id="simTab" class="tab-content" style="display: none;">
+        <style>
+          .sim-subtabs { display: flex; gap: 6px; margin-bottom: 10px; }
+          .sim-subtab { appearance: none; border: 1px solid var(--line); background: #fff;
+            color: var(--muted); font-weight: 600; font-size: 0.88rem; padding: 7px 13px;
+            border-radius: 999px; cursor: pointer; }
+          .sim-subtab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+          .sim-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+            font-size: 0.84rem; color: var(--muted); margin-bottom: 10px; }
+          .sim-controls input, .sim-controls select { border: 1px solid var(--line);
+            border-radius: 8px; padding: 5px 8px; font-size: 0.88rem; }
+          .sim-controls input[type=number] { width: 76px; }
+          #simCanvas { width: 100%; border: 1px solid var(--line); border-radius: 10px;
+            image-rendering: pixelated; cursor: crosshair; background: #fafafa; }
+          #simValidation { color: #b0483f; font-size: 0.82rem; min-height: 1.1em; margin: 4px 0; }
+          .sim-bar { display: flex; align-items: center; gap: 10px; font-size: 0.8rem;
+            color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+          #simProgress { display: none; flex: 1; min-width: 140px; height: 8px;
+            background: #e5eae7; border-radius: 999px; overflow: hidden; }
+          #simProgressFill { height: 100%; width: 0; background: var(--accent); }
+          #simTop5 { margin: 6px 0 0 0; padding-left: 20px; font-size: 0.84rem; }
+          #simLegendTable { border-collapse: collapse; font-size: 0.8rem; margin-top: 8px; }
+          #simLegendTable td { padding: 2px 8px 2px 0; color: var(--muted); }
+          .sim-note { font-size: 0.78rem; color: var(--muted); }
+          .sim-btn { appearance: none; border: 1px solid var(--accent); background: var(--accent);
+            color: #fff; font-weight: 600; border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+          .sim-btn:disabled { background: #b9c9c4; border-color: #b9c9c4; cursor: not-allowed; }
+          .sim-btn.ghost { background: #fff; color: var(--accent); }
+        </style>
+
+        <div class="sim-subtabs">
+          <button type="button" class="sim-subtab" data-sub="received">Received Signal (outdoor BS)</button>
+          <button type="button" class="sim-subtab active" data-sub="transmitter">Transmitter (indoor Tx)</button>
+          <button type="button" class="sim-subtab" data-sub="combined">Combined</button>
+        </div>
+
+        <div class="sim-controls">
+          <label>Band
+            <select id="simBand" required>
+              <option value="">— select —</option>
+            </select>
+          </label>
+          <span id="simTxFields">
+            <label>Tx power <input id="simTxPower" type="number" min="0" max="30" step="0.5" placeholder="dBm"></label>
+            <label>Antenna gain <input id="simGain" type="number" min="-2" max="9" step="0.5" placeholder="dBi"></label>
+          </span>
+          <span id="simBsFields" style="display: none;">
+            <label>BS bearing <input id="simBearing" type="number" min="0" max="359" step="1" placeholder="deg"></label>
+            <label>P_ref at facade <input id="simPref" type="number" min="-90" max="30" step="1" placeholder="dBm"></label>
+          </span>
+          <label>Reliability
+            <select id="simReliability">
+              <option value="80">80%</option>
+              <option value="90" selected>90%</option>
+              <option value="95">95%</option>
+            </select>
+          </label>
+          <label>Coverage threshold <input id="simThreshold" type="range" min="-110" max="-60" value="-85" step="1">
+            <span id="simThresholdVal">-85</span> dBm</label>
+          <button type="button" class="sim-btn" id="simSolve" disabled>Solve</button>
+        </div>
+        <div id="simValidation"></div>
+
+        <canvas id="simCanvas" width="448" height="256"></canvas>
+
+        <div class="sim-bar">
+          <label><input type="radio" name="simView" value="static" checked> Static heatmap</label>
+          <label><input type="radio" name="simView" value="timelapse"> Time-lapse</label>
+          <span id="simTimeControls" style="display: none;">
+            <button type="button" class="sim-btn ghost" id="simPlay">Play</button>
+            <input type="range" id="simScrub" min="0" max="1000" value="0" style="width: 180px; vertical-align: middle;">
+            <span id="simClock" class="sim-note"></span>
+          </span>
+          <div id="simProgress"><div id="simProgressFill"></div></div>
+        </div>
+
+        <div class="sim-bar">
+          <span id="simCbarLo" class="sim-note"></span>
+          <canvas id="simCbar" width="220" height="12" style="border-radius: 4px;"></canvas>
+          <span id="simCbarHi" class="sim-note"></span>
+          <span id="simReadout" class="sim-note" style="font-family: ui-monospace, monospace;"></span>
+          <span style="margin-left: auto;">
+            <button type="button" class="sim-btn ghost" id="simExportPng" disabled>PNG</button>
+            <button type="button" class="sim-btn ghost" id="simExportCsv" disabled>CSV</button>
+          </span>
+        </div>
+
+        <div class="sim-bar" id="simOptRow">
+          <label>Objective
+            <select id="simOptObjective">
+              <option value="coverage" title="fraction of walkable cells with P_rx − z·σ_SF ≥ threshold (38.901 χ_σ fade margin at decision time)">coverage</option>
+              <option value="mean_pl" title="mean path loss over walkable cells">mean path loss</option>
+              <option value="hole_filling" title="coverage restricted to cells where the outdoor BS map is below threshold — Solve the Received tab first">hole-filling</option>
+            </select>
+          </label>
+          <label>Stride
+            <select id="simOptStride">
+              <option value="16" selected>16 (fast)</option>
+              <option value="8">8</option>
+              <option value="4">4 (fine)</option>
+            </select>
+          </label>
+          <button type="button" class="sim-btn" id="simOptimize" disabled>Optimize placement</button>
+          <button type="button" class="sim-btn ghost" id="simOptCancel" style="display: none;">Cancel</button>
+        </div>
+        <ol id="simTop5"></ol>
+        <div class="sim-bar">
+          <span class="sim-note">Engine: <b id="simEngine">…</b> · <span id="simBearingNote"></span></span>
+        </div>
+
+        <table id="simLegendTable"><tbody id="simLegend"></tbody></table>
+        <p class="sim-note">Value map is steady-state; the time-lapse shows first wavefront
+          arrival (T = d/c, plane-wave staggered for the BS) and never changes the heatmap
+          values. Received-power math: P_rx = P_tx + G − PL (path loss is the only model
+          output). Maps combine in linear power. Physics constants come from
+          <code>SIM/manifest.json</code> — the legend above is generated from it.</p>
       </div>
     </section>
   </div>
@@ -1227,10 +1346,14 @@
       mapTabEl.style.display = tab === 'map' ? '' : 'none';
       histTabEl.style.display = tab === 'histogram' ? '' : 'none';
       timeTabEl.style.display = tab === 'time' ? '' : 'none';
+      const simTabEl = document.getElementById('simTab');
+      if (simTabEl) simTabEl.style.display = tab === 'sim' ? '' : 'none';
       tabMapBtn.classList.toggle('active', tab === 'map');
       tabHistogramBtn.classList.toggle('active', tab === 'histogram');
       tabTimeBtn.classList.toggle('active', tab === 'time');
-      refresh();
+      const simBtn = document.getElementById('tabSimBtn');
+      if (simBtn) simBtn.classList.toggle('active', tab === 'sim');
+      if (tab !== 'sim') refresh();
     }
 
     function stopPlayback() {
@@ -1244,6 +1367,8 @@
     tabMapBtn.addEventListener('click', () => setActiveTab('map'));
     tabHistogramBtn.addEventListener('click', () => setActiveTab('histogram'));
     tabTimeBtn.addEventListener('click', () => setActiveTab('time'));
+    document.getElementById('tabSimBtn')
+      .addEventListener('click', () => setActiveTab('sim'));
 
     clockFormatEl.addEventListener('change', () => {
       updateTimeLabel();
@@ -1365,5 +1490,8 @@
     applyDefaults(metricEl.value, filtered(metricEl.value));
     refresh();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js" defer></script>
+  <script src="SIM/web/sim_assets.js"></script>
+  <script src="SIM/web/simulator_tab.js" defer></script>
 </body>
 </html>

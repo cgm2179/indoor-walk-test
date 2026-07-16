@@ -1,0 +1,9 @@
+# Local pipeline (Phases A/B/D/E + asset export). Pinned per spec §10.
+numpy==2.5.0
+scipy==1.18.0
+matplotlib==3.11.0
+pillow==12.2.0
+pandas==3.0.3
+# Phase C runs on Colab: torch + onnx + onnxruntime come preinstalled there;
+# the notebook records exact versions in its output. For a local GPU box:
+# torch>=2.4, onnx>=1.16, onnxruntime>=1.19

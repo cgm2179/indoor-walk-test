@@ -1,0 +1,40 @@
+{
+  "objective": "coverage",
+  "freq_mhz": 3500.0,
+  "eirp_dbm": 26.0,
+  "threshold_dbm": -85.0,
+  "margin_db": 10.2784,
+  "stride": 24,
+  "top5": [
+    {
+      "rank": 1,
+      "x_cell": 216,
+      "y_cell": 216,
+      "score": 0.24108062902286406
+    },
+    {
+      "rank": 2,
+      "x_cell": 408,
+      "y_cell": 216,
+      "score": 0.23893012350472664
+    },
+    {
+      "rank": 3,
+      "x_cell": 240,
+      "y_cell": 216,
+      "score": 0.23836262899299593
+    },
+    {
+      "rank": 4,
+      "x_cell": 264,
+      "y_cell": 216,
+      "score": 0.23312077179253596
+    },
+    {
+      "rank": 5,
+      "x_cell": 288,
+      "y_cell": 216,
+      "score": 0.22974567285434805
+    }
+  ]
+}
