@@ -37,10 +37,14 @@ def pl_from_onnx(sess, manifest, onehot, tx, freq_feat):
     H, W = manifest["grid_shape"]
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     s = manifest["tx_blob_sigma_cells"]
-    x = np.empty((1, 8, H, W), np.float32)
+    cell = manifest["cell_size_m"]
+    dn = manifest.get("dist_channel_norm", 3.0)
+    d = np.hypot(xx - tx[0], yy - tx[1])
+    x = np.empty((1, 9, H, W), np.float32)
     x[0, :6] = onehot
-    x[0, 6] = np.exp(-((xx - tx[0]) ** 2 + (yy - tx[1]) ** 2) / (2 * s * s))
+    x[0, 6] = np.exp(-(d ** 2) / (2 * s * s))
     x[0, 7] = freq_feat
+    x[0, 8] = np.log10(np.maximum(d * cell, 1.0)) / dn
     out = sess.run(None, {"x": x})[0][0]
     n = manifest["norm"]
     return np.clip(out, 0, 1) * n["pl_range_db"] + n["pl_min_db"]

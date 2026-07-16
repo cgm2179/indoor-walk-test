@@ -276,17 +276,22 @@ def bs_maps(grid, inside, bearing_deg, f_mhz, cell_size_m,
 # --------------------------------------------------------------------------
 def write_manifest(grid, walkable, cell_size_m, mpp0):
     manifest = dict(
-        version="sim-v1.0",
+        version="sim-v1.1",
         grid_shape=[H_MODEL, W_MODEL],
         cell_size_m=round(cell_size_m, 6),
         floor_rows=[int(np.nonzero(np.load(SIM / 'inside_mask.npy').any(1))[0][0]),
                     int(np.nonzero(np.load(SIM / 'inside_mask.npy').any(1))[0][-1] + 1)],
         scale_status=f"measured from QGIS GCPs: {mpp0:.4f} m/px source raster; "
                      "supersedes the 12.3 px/m estimate in the build doc",
+        # 9th channel deviates from the doc's 8-channel table: without an
+        # explicit distance input the net must infer 20log10(d) from a
+        # sigma=2 blob and stalls ~16 dB val RMSE. Distance is geometry, not
+        # a Tx parameter, so R2 (no power/gain inputs) is untouched.
         channels=["onehot_air", "onehot_drywall", "onehot_concrete",
                   "onehot_core", "onehot_furniture", "onehot_exterior",
-                  "tx_gaussian_sigma2", "freq_feature"],
+                  "tx_gaussian_sigma2", "freq_feature", "log10_distance_m_over3"],
         tx_blob_sigma_cells=2.0,
+        dist_channel_norm=3.0,
         # clip window widened from the doc's [40,150]: this floor's multiwall
         # + saturation tops out ~170 dB, and [40,150] would clip ~50% of cells
         norm=dict(pl_min_db=40.0, pl_range_db=130.0,

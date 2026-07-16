@@ -1,5 +1,5 @@
 {
-  "version": "sim-v1.0",
+  "version": "sim-v1.1",
   "grid_shape": [
     256,
     448
@@ -18,9 +18,11 @@
     "onehot_furniture",
     "onehot_exterior",
     "tx_gaussian_sigma2",
-    "freq_feature"
+    "freq_feature",
+    "log10_distance_m_over3"
   ],
   "tx_blob_sigma_cells": 2.0,
+  "dist_channel_norm": 3.0,
   "norm": {
     "pl_min_db": 40.0,
     "pl_range_db": 130.0,

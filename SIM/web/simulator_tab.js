@@ -85,16 +85,19 @@
       onehotCache = new Float32Array(6 * n);
       for (let i = 0; i < n; i++) onehotCache[GRID[i] * n + i] = 1;
     }
-    const x = new Float32Array(8 * n);
+    const x = new Float32Array(9 * n);
     x.set(onehotCache);
     const s = M.tx_blob_sigma_cells, ff = FREQ_FEAT(fMHz);
+    const dn = M.dist_channel_norm || 3.0;
     for (let y = 0; y < H; y++)
       for (let xx = 0; xx < W; xx++) {
         const i = y * W + xx;
-        x[6 * n + i] = Math.exp(-((xx - tx.x) ** 2 + (y - tx.y) ** 2) / (2 * s * s));
+        const d2 = (xx - tx.x) ** 2 + (y - tx.y) ** 2;
+        x[6 * n + i] = Math.exp(-d2 / (2 * s * s));
         x[7 * n + i] = ff;
+        x[8 * n + i] = Math.log10(Math.max(Math.sqrt(d2) * CELL, 1)) / dn;
       }
-    const out = await ortSession.run({ x: new ort.Tensor('float32', x, [1, 8, H, W]) });
+    const out = await ortSession.run({ x: new ort.Tensor('float32', x, [1, 9, H, W]) });
     const y = out[Object.keys(out)[0]].data;
     const pl = new Float32Array(n);
     for (let i = 0; i < n; i++)
