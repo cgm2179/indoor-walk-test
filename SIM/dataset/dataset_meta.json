@@ -1,0 +1,19 @@
+{
+  "n_positions": 2500,
+  "freqs_mhz": [
+    2442.0,
+    3500.0,
+    5500.0,
+    6125.0
+  ],
+  "seed": 0,
+  "jitter_frac": 0.5,
+  "shards": 20,
+  "manifest_grid_sha": "74d7b232360f0a53",
+  "norm": {
+    "pl_min_db": 40.0,
+    "pl_range_db": 130.0,
+    "freq_log_lo_mhz": 2400.0,
+    "freq_log_hi_mhz": 6125.0
+  }
+}
