@@ -62,6 +62,22 @@ FOLD_8_TO_6 = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 5, 7: 4}
 FREQS_MHZ = [2442.0, 3500.0, 5500.0, 6125.0]
 FREQ_LOSS_MULT = {2442.0: 1.00, 3500.0: 1.15, 5500.0: 1.30, 6125.0: 1.40}
 
+# ---- physics v1.2, QUEUED (activate by flag + regenerate dataset + retrain)
+# Per-material absolute dB per crossing, from measured attenuation tables
+# (2.4 / 5 GHz anchors; 3.5 and 6.125 GHz log-f interpolated/extrapolated).
+# Measurements show concrete and glass roughly DOUBLE from 2.4 to 5 GHz while
+# drywall grows slower -- the v1.1 global multiplier under-scales them.
+# NOTE: exterior assumes STANDARD glass; if the curtain wall is low-E/coated,
+# raise class 5 to ~10/12/15/16 dB.
+PHYSICS_VARIANT = "v1.1"          # set "v1.2" -> make dataset -> retrain
+LOSS_DB_V2 = {                    # id: {f_mhz: dB per crossing}
+    1: {2442: 3.0,  3500: 5.3,  5500: 8.0,  6125: 8.7},    # drywall
+    2: {2442: 15.0, 3500: 22.7, 5500: 31.5, 6125: 34.1},   # concrete
+    3: {2442: 22.0, 3500: 28.7, 5500: 36.5, 6125: 38.9},   # core (concrete+metal)
+    5: {2442: 3.0,  3500: 4.5,  5500: 6.3,  6125: 6.8},    # standard glass
+}
+LOSS_PER_M_V2 = {4: {2442: 0.30, 3500: 0.45, 5500: 0.62, 6125: 0.68}}  # clutter
+
 # Straight-ray multiwall is only trusted for a handful of walls; beyond that,
 # measured indoor loss grows sublinearly because energy arrives by diffraction
 # and corridor paths (the spec's 12.3-2 ladder rung). Until that rung is
@@ -147,11 +163,19 @@ def fspl_1m_db(f_mhz):
 
 
 def loss_table(f_mhz, jitter=None):
-    """(per-crossing dB, per-meter dB) for the 6 classes at frequency f
-    (B.1 scaling), optionally multiplied by a per-class jitter vector (B.2)."""
-    mult = FREQ_LOSS_MULT[float(f_mhz)]
-    L = np.array([m["loss_db"] for m in MATERIALS6], np.float32) * mult
-    A = np.array([m["loss_per_m_db"] for m in MATERIALS6], np.float32) * mult
+    """(per-crossing dB, per-meter dB) for the 6 classes at frequency f,
+    optionally multiplied by a per-class jitter vector (B.2)."""
+    if PHYSICS_VARIANT == "v1.2":
+        L = np.zeros(6, np.float32)
+        A = np.zeros(6, np.float32)
+        for i, tab in LOSS_DB_V2.items():
+            L[i] = tab[int(f_mhz)]
+        for i, tab in LOSS_PER_M_V2.items():
+            A[i] = tab[int(f_mhz)]
+    else:
+        mult = FREQ_LOSS_MULT[float(f_mhz)]
+        L = np.array([m["loss_db"] for m in MATERIALS6], np.float32) * mult
+        A = np.array([m["loss_per_m_db"] for m in MATERIALS6], np.float32) * mult
     if jitter is not None:
         j = np.asarray(jitter, np.float32)
         L, A = L * j, A * j
