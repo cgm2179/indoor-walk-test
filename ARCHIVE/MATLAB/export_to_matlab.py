@@ -23,9 +23,9 @@ import numpy as np
 import pandas as pd
 from scipy.io import savemat
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]        # repo root (file lives in ARCHIVE/MATLAB)
 S1, S2 = ROOT / "STEP_1", ROOT / "STEP_2"
-WALK_CSV = ROOT / "Concat_Indoor_Walk_Test_from_csv.csv"
+WALK_CSV = ROOT / "ARCHIVE" / "raw_walk_data" / "Concat_Indoor_Walk_Test_from_csv.csv"
 
 
 def invert_affine(M):

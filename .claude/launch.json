@@ -2,12 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "coverage-web",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8431", "--directory", "WEB"],
-      "port": 8431
-    },
-    {
       "name": "dashboard",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8432", "--directory", "."],

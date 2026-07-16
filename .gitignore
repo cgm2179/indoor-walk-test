@@ -1,7 +1,7 @@
 .DS_Store
-STEP_1.zip
-STEP_4/dataset/
 __pycache__/
 STEP_2/multiband/*.npz
 SIM/dataset/shard_*.npz
 SIM/web/pl_unet.onnx
+ARCHIVE/raw_walk_data/STEP_1.zip
+ARCHIVE/superseded/STEP_4/dataset/
