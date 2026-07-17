@@ -82,7 +82,7 @@ you ever model street-level donors.
   area" (red in the preview). Tune `PARAMS` (esp. `hatch_density`,
   `thick_radius_px`) and re-run; the preview makes misfires easy to spot.
 - The earlier v1 outputs (built from the off-repo photo `IMG_1863.png`) are
-  preserved in git history at commit `bb3de5a`.
+  preserved in git history at commit `878dd9d`.
 
 ---
 
