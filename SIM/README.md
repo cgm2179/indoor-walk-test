@@ -34,9 +34,13 @@ solves, train the surrogate:
    InH baselines, and exports `pl_unet.onnx` after a ≤0.1 dB parity check.
 3. Drop the file at `SIM/web/pl_unet.onnx`. The tab auto-upgrades
    (engine badge switches from "physics" to "UNet surrogate").
-   Note: at base width 64 the ONNX is ~124 MB — over GitHub's 100 MB file
-   limit, so it is gitignored; keep it locally or int8-quantize (spec 8.1.3,
-   re-run the parity check after) to get under ~31 MB.
+
+**Getting the trained model into any clone** (it is 124 MB — over GitHub's
+100 MB in-repo limit, so it ships as a release asset instead; fp16 shrinking
+was tried and FAILED the 0.1 dB parity gate at 0.38 dB, so full precision it
+is): run `make model`, or
+`gh release download surrogate-v1 -p pl_unet.onnx -O SIM/web/pl_unet.onnx`.
+Backups also exist on Drive (`MyDrive/SIM/checkpoints/pl_unet.onnx`).
 
 ## Simulator tab (Phase F)
 

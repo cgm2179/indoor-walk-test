@@ -4,7 +4,12 @@
 
 PY = python3
 
-.PHONY: everything prepare test sample dataset audit assets optimizer clean
+.PHONY: everything prepare test sample dataset audit assets optimizer model clean
+
+# fetch the trained surrogate (124 MB, too big for git) from the GitHub release
+model:
+	gh release download surrogate-v1 -p pl_unet.onnx -O SIM/web/pl_unet.onnx \
+		--repo cgm2179/indoor-walk-test --clobber
 
 everything: prepare test dataset audit assets
 
