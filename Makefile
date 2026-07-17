@@ -11,6 +11,11 @@ model:
 	gh release download surrogate-v1 -p pl_unet.onnx -O SIM/web/pl_unet.onnx \
 		--repo cgm2179/indoor-walk-test --clobber
 
+# fetch the 10k-sample training dataset (1.2 GB) instead of regenerating it
+dataset-fetch:
+	gh release download dataset-v1 -p 'shard_*.npz' -D SIM/dataset \
+		--repo cgm2179/indoor-walk-test --clobber
+
 everything: prepare test dataset audit assets
 
 prepare:

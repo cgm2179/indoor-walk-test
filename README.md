@@ -1,6 +1,15 @@
 # 7th-Floor Indoor RF Propagation — Digital Twin
 
 What's **active** vs **archived**. If you're iterating, you're in the top half.
+Before changing anything structural, read **[DECISIONS.md](DECISIONS.md)** —
+every load-bearing choice with the reasoning and the failure that forced it,
+plus the ranked list of known-wrong things. Rasterization improvement roadmap:
+[STEP_1/README.md](STEP_1/README.md).
+
+**Reproducing from a fresh clone**: `make model` (trained surrogate, release
+`surrogate-v1`) · `make dataset-fetch` (training data, release `dataset-v1`)
+or `make dataset` to regenerate · `make test` to verify physics · serve the
+dashboard with VS Code Live Preview or `python3 -m http.server`.
 
 ## Active
 

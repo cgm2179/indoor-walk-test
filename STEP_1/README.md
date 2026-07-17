@@ -83,3 +83,65 @@ you ever model street-level donors.
   `thick_radius_px`) and re-run; the preview makes misfires easy to spot.
 - The earlier v1 outputs (built from the off-repo photo `IMG_1863.png`) are
   preserved in git history at commit `bb3de5a`.
+
+---
+
+# Improving the rasterization — roadmap for future iterations
+
+The material grid is the foundation every downstream number stands on: a
+misclassified wall is wrong in the physics, wrong in all 10,000 training
+maps, wrong in the surrogate, and wrong in the browser. Ranked by
+value-per-effort:
+
+## 1. Fix known misclassifications with the overrides file (hours)
+`material_overrides.json` re-labels regions after auto-classification and is
+the cheapest accuracy lever. Walk the floor with `preview_materials.png` on a
+phone and fix what you see. Known gaps: the lunch-room box is a rough guess;
+glass doors to elevators are not labeled; aluminum cubicle spines are drawn
+as furniture (id 7 exists for them, currently unused); low-E vs clear glass
+on the facade is unconfirmed (10-15 dB difference if coated!).
+
+## 2. Detect doors (days) — the biggest physics gap
+Doors are drawn as wall *openings* with swing arcs, so the classifier sees
+corridors leaking through doorways (roughly correct for open doors) but
+STEP_2's wall consolidation seals narrow ones shut (wrong both ways). A door
+detector — Hough/template match on the quarter-circle swing arcs, which are
+extremely regular in CAD — would let doors become their own class with a
+proper 2-3 dB closed-door loss, and would unlock the eikonal time-lapse
+upgrade (F.5 v2: wavefronts squeezing through doorways).
+
+## 3. Vector tracing instead of raster classification (a weekend)
+The spec's original advice ("hand-tracing beats a classifier for one floor")
+remains true. Tracing walls as line segments in QGIS (the georeference is
+already set up) gives: exact wall thickness/material per segment, arbitrary
+resampling without pooling artifacts (D6 becomes moot), and a natural format
+for the ray tracer rung of the physics ladder (Sionna wants geometry, not
+pixels). The raster pipeline stays as the fallback for floors without traces.
+
+## 4. Learn materials from measurements (research-grade, after Phase D)
+The inverse problem: with a known-Tx walk, per-wall attenuation becomes
+observable — rays that cross wall W and disagree with prediction indict W.
+Start with per-CLASS calibration (phase_d_calibrate.py does this); graduate
+to per-SEGMENT with the vector model from (3). This turns the walk test from
+"validation data" into "material sensor" and would auto-discover things like
+the low-E facade.
+
+## 5. Generalize to any floor plan (the CubiCasa5k route, GPU project)
+A U-Net trained on CubiCasa5k-style annotated floor plans auto-classifies
+walls/doors/windows for arbitrary buildings — the spec's Phase-4a. Only
+worth it when a second building actually appears; for this one floor, effort
+spent on (1)-(4) buys more accuracy.
+
+## Technical debt to keep in mind while doing any of the above
+- The 2px-wall / max-loss-pooling interaction (D6 in DECISIONS.md): any
+  resolution change must re-verify that walls survive. `phase_a.py --test`
+  has the crossing-count unit test; add a wall-continuity test if you touch
+  pooling.
+- Class ids are load-bearing: manifest channel order, the 6-class fold, the
+  JS legend, and the UNet's one-hot channels all key off ids 0-5. Adding a
+  class (e.g. doors) means: MATERIALS6 + FOLD map + manifest + IN_CH in the
+  notebook + onehot in simulator_tab.js + RETRAIN. Grep for "onehot" and
+  "IN_CH" to find every site.
+- The rasterizer's PARAMS were tuned for THIS 1150x515 render. A re-exported
+  floor plan at different DPI needs re-tuning (dark_thresh, min_struct_area,
+  hatch density) — check preview_materials.png after any source change.
