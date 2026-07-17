@@ -4,7 +4,9 @@ What's **active** vs **archived**. If you're iterating, you're in the top half.
 Before changing anything structural, read **[DECISIONS.md](DECISIONS.md)** —
 every load-bearing choice with the reasoning and the failure that forced it,
 plus the ranked list of known-wrong things. Rasterization improvement roadmap:
-[STEP_1/README.md](STEP_1/README.md).
+[STEP_1/README.md](STEP_1/README.md). Retraining with new physics or a new
+grid: **[SIM/retrain_for_physics_training_map_v2.md](SIM/retrain_for_physics_training_map_v2.md)**
+— the full runbook plus the complete v1 chronicle and error->fix table.
 
 **Reproducing from a fresh clone**: `make model` (trained surrogate, release
 `surrogate-v1`) · `make dataset-fetch` (training data, release `dataset-v1`)

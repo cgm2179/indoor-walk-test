@@ -4,7 +4,9 @@ Every load-bearing decision in this project, with the reasoning and the
 evidence that forced it. Read this before changing anything structural —
 several of these decisions were reached by *hitting the failure first*.
 Companion docs: [README.md](README.md) (layout), [SIM/README.md](SIM/README.md)
-(phase map), [SIM/MODEL_CARD.md](SIM/MODEL_CARD.md) (model scope/limits).
+(phase map), [SIM/MODEL_CARD.md](SIM/MODEL_CARD.md) (model scope/limits),
+[SIM/retrain_for_physics_training_map_v2.md](SIM/retrain_for_physics_training_map_v2.md)
+(retrain runbook + full v1 chronicle).
 
 ## The core architecture (why three layers)
 
