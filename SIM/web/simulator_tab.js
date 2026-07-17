@@ -71,7 +71,7 @@
             { executionProviders: eps });
           engineName = 'UNet surrogate (' + eps[0] + ')';
           break;
-        } catch (e) { /* next provider */ }
+        } catch (e) { console.error('[sim] ONNX init failed on', eps[0], '-', e.message); }
       }
     } catch (e) { ortSession = null; }
     $('simEngine').textContent = engineName;
@@ -97,7 +97,9 @@
         x[7 * n + i] = ff;
         x[8 * n + i] = Math.log10(Math.max(Math.sqrt(d2) * CELL, 1)) / dn;
       }
-    const out = await ortSession.run({ x: new ort.Tensor('float32', x, [1, 9, H, W]) });
+    const feed = {};
+    feed[ortSession.inputNames[0]] = new ort.Tensor('float32', x, [1, 9, H, W]);
+    const out = await ortSession.run(feed);
     const y = out[Object.keys(out)[0]].data;
     const pl = new Float32Array(n);
     for (let i = 0; i < n; i++)
