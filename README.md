@@ -12,11 +12,13 @@ What's **active** vs **archived**. If you're iterating, you're in the top half.
 | `7th_Floor_...V2.2.png` + `.TAB` + `.aux.xml` + `_PseudoMercator.csv` | Source ground truth: the georeferenced floor plan and its QGIS control points. Everything derives from these. |
 | `Makefile` | `make everything` / `make test` / `make dataset` / `make assets`. |
 
-Current status: dataset (10k samples) done and on Drive · UNet v3 training on
-Colab (resume-protected) · Simulator tab live on the JS physics engine,
-awaiting `SIM/web/pl_unet.onnx` · physics v1.2 (per-material frequency
-scaling) queued behind a flag in `SIM/phase_a.py` · Phase D blocked on a
-known-Tx measurement walk.
+Current status: **surrogate deployed** — UNet v3 trained (test RMSE 4.68 dB /
+MAE 2.87 dB vs simulator truth, beats FSPL / log-distance / 38.901 baselines;
+single seed), exported to `SIM/web/pl_unet.onnx` (local only, gitignored;
+backup on Drive under SIM/checkpoints/) and running in the Simulator tab ·
+dataset (10k samples) on Drive · physics v1.2 (per-material frequency
+scaling) queued behind a flag in `SIM/phase_a.py` · remaining: R9 seeds
+{1,2} for mean±std, and Phase D calibration (blocked on a known-Tx walk).
 
 ## ARCHIVE/ (not iterated on — kept for provenance)
 
