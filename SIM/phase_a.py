@@ -343,7 +343,30 @@ def write_manifest(grid, walkable, cell_size_m, mpp0):
                 rsrp_good_dbm=-85,
                 sigma_sf_db=dict(los=3.0, nlos=8.03),
                 reliability_z=dict(**{"80": 0.84, "90": 1.28, "95": 1.65}),
-                timelapse_slowdown=1e-8),
+                timelapse_slowdown=1e-8,
+                # demo presets: typical hardware values; choosing one is an
+                # explicit user action, so R10 (no silent defaults) holds
+                presets=[
+                    dict(label="Home Wi-Fi router (2.4 GHz)",
+                         f_mhz=2442, tx_power_dbm=20, gain_dbi=2),
+                    dict(label="Enterprise ceiling AP (5 GHz)",
+                         f_mhz=5500, tx_power_dbm=17, gain_dbi=4),
+                    dict(label="Wi-Fi 6E AP (6 GHz)",
+                         f_mhz=6125, tx_power_dbm=18, gain_dbi=3),
+                    dict(label="5G small cell n78 (3.5 GHz)",
+                         f_mhz=3500, tx_power_dbm=24, gain_dbi=5),
+                    dict(label="Phone hotspot (2.4 GHz)",
+                         f_mhz=2442, tx_power_dbm=15, gain_dbi=0),
+                ],
+                # P_ref anchored to the walk test: the value that makes the
+                # simulated BS map's indoor median equal the measured median
+                # (-111.3 dBm over 843 on-floor NR points). Bearing unknown
+                # until Phase D; 135 deg is a placeholder for demos.
+                bs_preset=dict(label="Outdoor macro (walk-test calibrated)",
+                               p_ref_dbm=11.0, bearing_deg=135,
+                               f_mhz=3500,
+                               note="level anchored to measured indoor median; "
+                                    "bearing is a demo placeholder")),
         walkable_mask_sha256=hashlib.sha256(walkable.tobytes()).hexdigest()[:16],
         grid_sha256=hashlib.sha256(grid.tobytes()).hexdigest()[:16],
     )

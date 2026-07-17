@@ -407,6 +407,33 @@
   function initUI() {
     const bandSel = $('simBand');
     M.ui.bands.forEach(b => bandSel.add(new Option(b.label, b.f_mhz)));
+
+    // Device presets from the manifest (8.2): choosing one is an explicit
+    // action that fills the fields -- R10's "no silent defaults" holds.
+    const presetSel = $('simPreset');
+    if (presetSel && M.ui.presets) {
+      M.ui.presets.forEach((p, i) => presetSel.add(new Option(p.label, 'tx' + i)));
+      if (M.ui.bs_preset)
+        presetSel.add(new Option(M.ui.bs_preset.label, 'bs'));
+      presetSel.addEventListener('change', () => {
+        const v = presetSel.value;
+        const fill = (id, val) => { $(id).value = val;
+          $(id).dispatchEvent(new Event('input', { bubbles: true })); };
+        if (v.startsWith('tx')) {
+          const p = M.ui.presets[+v.slice(2)];
+          fill('simBand', p.f_mhz);
+          fill('simTxPower', p.tx_power_dbm);
+          fill('simGain', p.gain_dbi);
+        } else if (v === 'bs') {
+          const b = M.ui.bs_preset;
+          fill('simBand', b.f_mhz);
+          fill('simPref', b.p_ref_dbm);
+          fill('simBearing', b.bearing_deg);
+          $('simBearingNote').textContent = b.note;
+        }
+        refreshButtons();
+      });
+    }
     // legend from the manifest material table (8.3) - same numbers as physics
     const tb = $('simLegend');
     M.materials.forEach(mm => {

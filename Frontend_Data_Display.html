@@ -363,6 +363,11 @@
         </div>
 
         <div class="sim-controls">
+          <label>Device preset
+            <select id="simPreset" title="Fills band / power / gain with typical hardware values (demo shortcut — everything stays editable)">
+              <option value="">— custom —</option>
+            </select>
+          </label>
           <label>Band
             <select id="simBand" required>
               <option value="">— select —</option>
@@ -1491,7 +1496,7 @@
     refresh();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js" defer></script>
-  <script src="SIM/web/sim_assets.js"></script>
-  <script src="SIM/web/simulator_tab.js" defer></script>
+  <script src="SIM/web/sim_assets.js?v=3"></script>
+  <script src="SIM/web/simulator_tab.js?v=3" defer></script>
 </body>
 </html>
