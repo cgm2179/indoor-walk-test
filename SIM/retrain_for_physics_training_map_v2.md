@@ -583,5 +583,148 @@ glazing before shipping v1.2 as truth.
 | push rejected (fetch first) | Colab saved to main meanwhile | git pull --rebase, then push |
 | preview port in use | user's own http.server on 8432 | Live Preview on 3210 / preview on 8433 |
 
+
+---
+
+## PART 9 — DATA SCHEMAS AND INTERFACES (exact contracts, v1)
+
+### Dataset shard (`SIM/dataset/shard_NNN.npz`, 20 shards of 500)
+- `tx_pos`   int16  (N, 2) — transmitter cell (x, y) in the 256x448 model grid
+- `freq_feat` float32 (N,) — (log10 f − log10 2400)/(log10 6125 − log10 2400)
+- `target`  float16 (N, 256, 448) — (clip(PL,40,170) − 40)/130
+- `jitter`  float32 (N, 6) — per-class loss multiplier used (1.0 = unjittered)
+- `pos_id`  int32  (N,) — index into splits.json positions
+
+### `SIM/dataset/splits.json`
+`{seed: 0, n_positions: 2500, positions: [[x,y],...], train: [ids],
+val: [ids], test: [ids]}` — ids are positions indices; NEVER regenerate with
+different membership (R4/R5); same seed reproduces identically.
+
+### `SIM/manifest.json` (R6 — the single source of truth), key fields
+version · grid_shape [256,448] · cell_size_m 0.17438 · floor_rows [32,224] ·
+channels[9] · tx_blob_sigma_cells 2.0 · dist_channel_norm 3.0 ·
+norm{pl_min_db 40, pl_range_db 130, freq_log_lo/hi 2400/6125} ·
+physics{n_exp 2.0, d0_m 1.0, ray_step_cells 0.5, obstruction_linear_db 40,
+obstruction_sat_extra_db 50} · materials[6]{id,name,loss_db,loss_per_m_db,
+color} · freq_loss_mult · o2i_db{15/28} · ui{bands, presets, bs_preset,
+sigma_sf_db, reliability_z, rsrp_good_dbm −85, timelapse_slowdown 1e-8} ·
+grid_sha256 / walkable_mask_sha256 (16-hex prefixes — the retrain tripwire).
+
+### ONNX model contract (`surrogate-v1`)
+Input `x` float32 [1, 9, 256, 448] (channel order = manifest.channels);
+output `pl_norm` float32 [1, 256, 448]; un-normalize:
+PL_dB = clip(y,0,1)*130 + 40. Opset 17, fp32, 124,150,062 bytes. Feed by
+`session.inputNames[0]` in JS (dynamo exporters may rename inputs).
+
+### `SIM/web/sim_assets.js` (script-tag loadable; base64 little-endian)
+`window.SIM_ASSETS = {manifest, grid_b64 (uint8 H*W), walkable_b64 (uint8),
+inside_b64 (uint8), bs: {bearings [0..315 step 45], f_mhz 3500, o2i_db 15,
+gain_decidb_b64[8] (int16, gain*10 re P_ref), time_ns_b64[8] (uint16 ns)}}`.
+Regenerate with `make assets` (BS precompute ~10 min); bump the `?v=N`
+cache-buster in Frontend_Data_Display.html afterwards.
+
+### STEP_1 outputs (source-resolution layer)
+`material_grid.npy` uint8 515x1150 (8 classes) · `materials.json`
+{id:{name,loss_db,loss_per_m_db}} · `transmitters.json` float px + local
+meters + lon/lat + EPSG:3857 per pin · `floorplan_meta.json` with THREE 2x3
+affines from SOURCE pixel coords: →local ENU meters (use for distances),
+→EPSG:3857 (walk-CSV frame; lengths inflated 1/cos(lat)≈1.285), →lon/lat;
+plus gcp list, residuals, meters_per_px · `material_overrides.json`
+{overrides:[{label, material, applies_to[ids], rect_px|polygon_px}]}.
+
+### MATLAB bundle (`ARCHIVE/MATLAB/indoor_walk_test.mat`)
+structs `floorplan` (grids, losses, affines, hashes), `tx`, `sim` (STEP_2
+maps), `walk` (10,248 rows: datetime, lat/lon, x_px/y_px/x_m/y_m, on_floor,
+protocol 1=LTE/2=NR, rsrp_dbm/rsrq_db/cinr_db/rssi_dbm, pci, freq_mhz,
+band). MATLAB is 1-based: value = grid(round(y_px)+1, round(x_px)+1).
+
+## PART 10 — COORDINATE FRAMES CHEAT SHEET
+
+1. **Source pixels**: 1150x515, x right, y down, 0-based. 0.0679 m/px.
+2. **Model cells**: 448x256, 0.17438 m/cell (ratio source→model = 2.5679).
+   Floor occupies rows 32–223; rows 0–31 and 224–255 are outside padding.
+   source_px → model_cell: x_c = x_px/2.5679, y_c = y_px/2.5679 + 32.
+   model_cell → meters-on-floor: multiply by 0.17438 (x only; y subtract the
+   32-row pad first if you want floor-relative meters).
+3. **Local ENU meters**: about origin_lonlat (mean of the 3 GCPs), x east,
+   y NORTH (sign flip vs pixel y). Use floorplan_meta's affine FROM SOURCE
+   pixels — to geo-locate a model cell, convert model→source first.
+4. **lon/lat (WGS84)** and **EPSG:3857**: via the other two affines; 3857
+   matches the walk CSV; never measure distances in 3857.
+5. **MATLAB**: everything above is 0-based; add 1 to indices.
+Gotcha that bit once: the SIM Tx sample conversion is
+x_c = x_px * 0.0679 / 0.17438 (NOT /2 like the old STEP_4 pipeline).
+
+## PART 11 — ENVIRONMENT & TOOLING RECORD (v1 era)
+
+- **Local Mac**: 10-core Apple Silicon; Python 3.14 (framework build) with
+  numpy 2.5.0, scipy 1.18.0, matplotlib 3.11.0, pillow 12.2.0, pandas 3.0.3;
+  onnx 1.22.0 + onnxruntime 1.27.0 user-installed for the fp16 experiment;
+  NO OpenCV (rasterizer is scipy-only by design), NO torch locally (all
+  training on Colab). gh CLI authed as cgm2179.
+- **Colab**: torch 2.8+ era — dynamo ONNX exporter is default-ish (two-file
+  trap), onnxscript/onnxruntime not preinstalled; T4 ≈ 450 s/epoch,
+  the better GPU tier ≈ 65–73 s/epoch; free tier enforces GPU quotas
+  (resume infra exists for this).
+- **Browser runtime**: onnxruntime-web pinned at 1.19.2 via jsdelivr CDN in
+  Frontend_Data_Display.html; wasm EP verified working; webgpu EP loads
+  where the browser supports it (headless test browser didn't). If a future
+  export lands at a newer IR/opset that 1.19.2 rejects, bump the CDN pin.
+- **Servers/ports**: 8432 = user's manual `python3 -m http.server`;
+  3210 = VS Code Live Preview (workspace-configured, no-cache +
+  reload-on-save — the recommended dev loop); 8433 = assistant's test
+  server. file:// works for the physics engine (script-tag assets) but NOT
+  for the ONNX fetch.
+- **Repo**: github.com/cgm2179/indoor-walk-test, PRIVATE. Colab needs a
+  fine-grained PAT (Contents: Read) to clone; token prompt is in cell 1.
+
+## PART 12 — TEST & VERIFICATION INVENTORY (and known gaps)
+
+Exists and passes (run `make test`):
+- phase_a --test: 3-cell wall counts as ONE crossing (R3); two separated
+  walls = two; higher frequency = more loss; LOS cell has zero crossings;
+  furniture accumulates per meter (25 cells x 0.2 m x rate).
+- phase_b --audit: split disjointness, all-freqs-together per position,
+  target histogram, clip-bound percentages.
+- phase_d --sanity (D.3): monotone LOS decay, no cell below FSPL, 2.4 GHz
+  <= higher bands cell-wise.
+- Notebook gates: ONNX parity <= 0.1 dB over 50 test maps; export file-size
+  assert > 50 MB; baseline table (FSPL must be terrible — catches broken
+  evaluation, spec C.4a).
+- Manual-but-recorded: JS-vs-Python physics probes (0.034 dB max at 4 cells;
+  method: SIM_DEBUG.pathlossPhysics in console vs python probe script).
+
+Known gaps (worth closing in v2):
+- No automated JS parity test (the 0.034 dB check was manual) — a tiny
+  node/puppeteer script or a pytest that runs the JS via quickjs would fix.
+- No golden-map regression test (hash one canonical (tx,f) map so physics
+  refactors can't silently drift).
+- No wall-continuity test on pooling (D6 risk when resolution changes).
+- BS plane-wave mode has NO validation against anything (first real check
+  will be the Phase D outdoor fit).
+- UI is manually tested only (R10 validation, exports, time-lapse).
+
+## PART 13 — GLOSSARY (for newcomers)
+
+**RSRP** reference-signal received power, dBm, per-resource-element — the
+"signal bars" metric. **RSRQ** quality ratio (RSRP vs total RSSI), ceiling
+−10.8 dB at full load. **SINR/CINR** signal to interference+noise, dB.
+**RSSI** total wideband received power. **EIRP** transmit power + antenna
+gain. **PL** path loss, dB — the ONLY thing the model predicts (R1).
+**FSPL** free-space path loss. **Motley-Keenan / MWM** multi-wall model:
+FSPL + per-wall losses. **O2I** outdoor-to-indoor facade penetration.
+**GCP** ground control point (pixel↔geo pair for georeferencing).
+**ENU** east-north-up local metric frame. **EPSG:3857** web-Mercator
+projection (walk CSV frame; distance-distorted). **n78/n41/n71/B2...**
+3GPP band names (3.5 GHz / 2.5 / 0.6 / 1.9). **SSB** NR sync signal block
+(what the scanner measures for 5G). **PCI** physical cell identity.
+**sigma_SF / X_sigma** shadow-fading standard deviation. **LOS/NLOS**
+line-of-sight or not (here computed exactly by ray-march, not probability).
+**opset/IR** ONNX operator-set and file-format versions. **EP** ONNX
+Runtime execution provider (wasm, webgpu). **R1–R10** the spec's
+non-negotiable rules (one output; no Tx-power inputs; contiguous-run
+crossings; split by position; test-once; manifest as truth; linear-power
+combining; walkable-only Tx; multi-seed reporting; no silent UI defaults).
+
 *End of file. When v2 ships, append its chronicle here and start
 retrain_for_physics_training_map_v3.*
