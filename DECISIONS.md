@@ -139,3 +139,94 @@ this.
 5. **BS mode is coarse** — 8 precomputed bearings, source-averaged
    normalization (P_ref is a model-frame parameter, anchored to the walk-test
    median at +11 dBm, bearing unknown until Phase D).
+
+---
+
+## Measurement record — original data and derived values (v1)
+
+Everything numeric the project rests on, with provenance. "Original" =
+directly measured/recorded; "derived" = computed here (method noted).
+
+### Georeference & geometry (original: QGIS ground control points, .TAB)
+
+| GCP | lon, lat | pixel (x, y) |
+|---|---|---|
+| Pt 1 | −77.00705350, 38.90368910 | (974, 47) |
+| Pt 2 | −77.00773090, 38.90349770 | (155, 468) |
+| Pt 3 | −77.00743210, 38.90356720 | (557, 268) |
+
+Source raster: `7th_Floor_2nd_Indoor_Walk_Test_V2.2.png`, 1150x515 px.
+Derived (similarity fit, WGS84 curvature radii — see D5): scale
+**0.0679 m/px**, floor plate **78.1 x 35.0 m**, fit residuals
+**1.19 / 1.25 / 2.44 m** per GCP. GCPs are nearly collinear (cross product
+~5442 vs ~413k well-spread) — the reason a similarity, not affine, fit.
+
+Tx candidate pins (original: green markers in the drawing; derived subpixel
+extraction): Tx1 (636.3, 403.3) px = local (+3.77, −10.23) m =
+(−77.0073620, 38.9034925); Tx2 (663.0, 403.5) px = (+5.57, −10.48) m =
+(−77.0073413, 38.9034903). Separation **1.8 m**.
+
+Floor composition (derived, STEP_1 classifier at full resolution, final v1
+run): air 64.65%, drywall 3.46%, concrete 1.04%, core service 6.60%,
+furniture 21.45%, exterior glass 2.04%, glass partition (override) 0.76%,
+cubicle aluminum 0.00%. At model resolution (256x448, inside cells):
+air ~55%, drywall ~8%, concrete ~2%, core ~8%, furniture ~24%, exterior ~3.5%.
+
+### Walk-test measurements (original: PCTEL SeeHawk Collect 6.10.0.4,
+DTR interface 1.0.26.0, walked 2026-07-07, T-Mobile MCC 310 / MNC 260)
+
+- 23,017 scanner rows; **10,248 with a power reading**: 5,951 LTE
+  ("Ref Signal - Received Power") + 4,297 NR ("SSB - Received Power").
+- Value ranges: LTE RSRP −145.49 … −62.06 dBm; NR SSB RSRP −136.37 …
+  −67.90 dBm; Channel RSSI −103.5 … −32.96 dBm; CINR −23.47 … +39.41 dB.
+- Frequencies observed 619.35 – 3,871.2 MHz; NR band mix: n41 (1,461 rows),
+  n71 (1,042), n25 (948), n2 (647).
+- GPS extent lat 38.902133–38.90522, lon −77.009213…−77.005392 (~340 m
+  scatter for a 78 m floor — indoor GPS drift); **2,409 of 10,248 points
+  land on the floor plate** (`walk.on_floor` in the MATLAB bundle).
+- On-floor medians (derived): **NR SSB RSRP −111.3 dBm (843 pts)**,
+  **LTE RSRP −99.0 dBm (1,566 pts)**.
+- LIMITATION: donors are outdoor macros at unknown sites — usable as level
+  anchors, not for per-wall calibration (Phase D needs a known-Tx walk).
+
+### Material losses in use (v1.1 active; literature values, NOT calibrated)
+
+Per crossing (dB), scaled x1.00 / 1.15 / 1.30 / 1.40 at 2442/3500/5500/6125
+MHz: drywall 4, concrete/masonry 15, core service 20, exterior glass 3
+(walked ground truth: facade is glass; RAISE to 10–15 if low-E/coated —
+unconfirmed). Furniture 0.3 dB/m (bulk, D9). O2I facade for the BS mode:
+15 dB low-loss / 28 dB high-loss (3GPP TR 38.901). Shadow fading for the
+optimizer margin: sigma_SF = 3.0 dB LOS / 8.03 dB NLOS (38.901 InH), z =
+0.84/1.28/1.65 at 80/90/95%. Queued v1.2 per-material table (measured
+attenuation anchors at 2.4/5 GHz, log-f interpolated — in `LOSS_DB_V2`):
+drywall 3/5.3/8/8.7, concrete 15/22.7/31.5/34.1, core 22/28.7/36.5/38.9,
+glass 3/4.5/6.3/6.8, furniture 0.30/0.45/0.62/0.68 dB/m.
+
+### Outdoor-BS anchor (derived from measurements + simulation)
+
+P_ref (facade reference in the model frame) = **+11 dBm**: the value making
+the simulated BS map's indoor median equal the measured on-floor NR median
+(−111.3 dBm). Per-assumed-bearing values: 0°:+20.5, 45°:+10.0, 90°:+12.1,
+135°:−1.5, 180°:+2.7, 225°:+2.0, 270°:+18.5, 315°:+20.7 dBm. Median indoor
+gain re P_ref by bearing: −131.8/−121.3/−123.4/−109.8/−114.0/−113.3/−129.8/
+−132.0 dB. Illuminated facade sources per bearing (stride 1): 833/1113/330/
+680/393/396/42/825 (west end is recessed — hence 42). True bearing unknown
+until Phase D; 135° is a demo placeholder.
+
+### Dataset & model measurements (derived, v1)
+
+- Dataset: 10,000 samples (2,500 positions x 4 freqs), splits 2000/250/250
+  by position; target clip stats: 0.00% at 40 dB floor, **8.86% at the
+  170 dB ceiling** (true dead zones); histogram monotone toward high PL.
+- Physics timing: 0.49 s/map (M-series Mac), BS 8-bearing precompute ~10 min,
+  dataset ~25 min on 4 workers.
+- Training (seed 0, fast Colab GPU ~65-73 s/epoch; T4 ~450 s/epoch):
+  8-channel input stalled at 16.04 dB val RMSE @ep12 (removed); 9-channel:
+  11.42 @ep1 → 9.47 @ep3 → 5.61 @ep36 → **4.64 dB val converged**.
+- Final metrics (TEST, R5 single evaluation): FSPL 72.81 / log-distance
+  17.56 / 38.901-InH 58.91 / **UNet 4.68 dB RMSE, 2.87 MAE, −0.09 bias**.
+- Sanity: monotone LOS decay 1.0; 0.00% cells below FSPL; freq ordering ✓.
+- Parity chain: JS physics vs Python **0.034 dB**; ONNX vs PyTorch
+  **0.0011 dB**; fp16 attempt **0.38 dB indoor / 2.26 dB max — REJECTED**
+  (gate 0.1 dB). Shipped artifact: fp32, 124,150,062 bytes, opset 17,
+  input 'x' [1,9,256,448], output 'pl_norm', release `surrogate-v1`.
