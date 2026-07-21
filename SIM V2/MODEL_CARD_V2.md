@@ -1,17 +1,22 @@
+
+
+
+
 # Model Card — 7th-Floor Path-Loss Surrogate (sim-v1.0)
 
 ## Scope (read this first)
-
 - **7th floor only.** Trained on one floor plan; predictions for any other
   geometry are meaningless. Generalizing requires training across many plans
   (CubiCasa5k-style) — future work, per spec §1.3.6.
 - **One output**: path loss in dB (R1). Received power, RSRQ-style metrics,
   coverage — all derived downstream via `P_rx = P_tx + G_tx + G_rx − PL` (R2).
-- **Frequencies**: 2,442 / 3,500 / 5,500 / 6,125 MHz (frequency is a model
+- **g**: 2,442 / 3,500 / 5,500 / 6,125 MHz (frequency is a model
   input; the four anchors are what the dataset covers).
 - **Uncalibrated (v1)**: material losses are table values scaled by a crude
   monotone frequency multiplier; Phase D calibration against G-flex
   measurements has NOT run yet (blocked on a walk with a known transmitter).
+  ----------------NEW ADDITION----------------
+- 
 
 ## Physics that generated the training targets
 
@@ -22,6 +27,7 @@ linear to 40 dB then smoothly saturated at 90 dB (stand-in for the 12.3-2
 knife-edge diffraction rung; remove when implemented). No reflections, no
 true diffraction, no floor/ceiling paths. AoA/AoD, delay spread, Doppler:
 out of scope (see spec §12.2).
+----------------NEW ADDITION----------------
 
 ## Known deviations from the build doc (all in manifest.json)
 
@@ -33,22 +39,18 @@ out of scope (see spec §12.2).
    0.17 m cells: ~50 runs on an open-plan ray).
 4. Resampling is max-loss pooling, not nearest-neighbor (labels stay
    integers; 2-px walls survive).
+----------------NEW ADDITION----------------
 
 ## Error bounds
 
-- vs simulator ground truth (ACHIEVED, seed 0): **TEST RMSE 4.68 dB /
-  MAE 2.87 dB / bias −0.09 dB**. Baselines on the same test set: FSPL 72.8,
-  fitted log-distance 17.6, 3GPP 38.901 InH 58.9 dB. Single seed; R9
-  mean±std over {0,1,2} still pending (`QUICK=False`).
+- vs simulator ground truth: fill in after Phase C (target ≤ 3 dB RMSE,
+  mean ± std over seeds {0,1,2}).
 - vs reality: unknown until Phase D (target ≤ 8 dB RMSE on held-out
   measurement points — the physical floor set by shadow fading).
+----------------NEW ADDITION----------------
 
 ## Version / integrity
 
-manifest `sim-v1.1` (9-channel input; v1.0 was the 8-channel design that
-stalled). grid and walkable-mask SHA-256 prefixes are recorded in
+manifest `sim-v1.0`; grid and walkable-mask SHA-256 prefixes are recorded in
 manifest.json and must match between dataset, training run, and web deploy.
-Model ships as GitHub release `surrogate-v1` (fp32, 124 MB, opset 17).
-
-**Superseded by:** `MODEL_CARD_v2.md` describes the planned sim-v2.0
-(enhanced Motley-Keenan). v1 remains the deployed, validated baseline.
+----------------NEW ADDITION----------------

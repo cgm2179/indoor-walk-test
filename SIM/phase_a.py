@@ -78,6 +78,42 @@ LOSS_DB_V2 = {                    # id: {f_mhz: dB per crossing}
 }
 LOSS_PER_M_V2 = {4: {2442: 0.30, 3500: 0.45, 5500: 0.62, 6125: 0.68}}  # clutter
 
+# ---- physics v2.0 config, SCAFFOLD ONLY (see MODEL_CARD_v2.md) --------------
+# Enhanced / modified Motley-Keenan (IEEE Xplore doc 8016211). This block is
+# DATA describing the v2 model; the engine functions that consume angle,
+# thickness, and the frequency exponent are NOT implemented yet (they are the
+# workflow in MODEL_CARD_v2.md §11 steps 3-4). loss_table() ignores this
+# unless PHYSICS_VARIANT == "v2.0", which nothing sets today, so the deployed
+# v1.1 model is untouched.
+#
+# Key v2 material change (MEASURED, not assumed): the FCC HQ facade is low-E /
+# metal-coated glass -> exterior glass jumps 3 -> 20 dB, and the lunch-room
+# glass (ordinary) must become its OWN class (~3 dB). That un-fold makes v2 a
+# 7-class model (cascade C). Ids below are the v2 (7-class) scheme.
+V2 = dict(
+    f_ref_mhz=2442.0,
+    # 9-anchor frequency union: 5 scanner bands + 4 assumed indoor-Tx bands
+    freqs_mhz=[619.0, 627.0, 1935.0, 2442.0, 2510.0, 2600.0,
+               3500.0, 5500.0, 6125.0],
+    # L_ref at f_ref (dB per crossing) and per-material frequency exponent
+    # gamma in L_w(f) = L_ref * (f/f_ref)**gamma. gamma is a SEED; the real
+    # values come from fitting the Gflex multi-band logs (MODEL_CARD_v2 2.1).
+    walls={            # id: (name, L_ref_dB, gamma)
+        1: ("drywall_partition",   3.0,  0.45),
+        2: ("concrete_masonry",   15.0,  0.75),
+        3: ("core_service_area",  22.0,  0.65),
+        5: ("exterior_glass_lowE", 20.0, 0.35),   # <-- 20 dB, measured facade
+        6: ("interior_glass",      3.0,  0.35),   # <-- new class, normal glass
+    },
+    clutter={4: ("furniture", 0.30, 0.55)},       # dB/m at f_ref, exponent
+    # enhancements, each a MODEL_CARD_v2 section; None = engine not written yet
+    angle_of_incidence=None,   # §2.2 scale loss by sec(theta) about wall normal
+    thickness_scaling=None,    # §2.3 Beer-Lambert per rasterized run length
+    diffraction=None,          # §2.4 knife-edge/UTD -> then DELETE saturation
+    faf_db_per_floor=None,     # §2.5 floor attenuation, for vertical/outdoor
+    o2i_lowE_db=25.0,          # 20 dB low-E facade shifts O2I ~15 -> ~25 dB
+)
+
 # Straight-ray multiwall is only trusted for a handful of walls; beyond that,
 # measured indoor loss grows sublinearly because energy arrives by diffraction
 # and corridor paths (the spec's 12.3-2 ladder rung). Until that rung is

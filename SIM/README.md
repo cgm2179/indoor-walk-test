@@ -16,6 +16,12 @@ their constants from it.
 | E — placement optimizer | `phase_e_optimizer.py` | ✅ + in-browser version |
 | F — export & Simulator tab | `export_web_assets.py`, `web/` | ✅ live in Frontend_Data_Display.html |
 
+**Next generation**: `MODEL_CARD_v2.md` is the planned sim-v2.0 (enhanced
+Motley-Keenan: frequency exponent, angle of incidence, thickness, diffraction;
+20 dB low-E facade; 9-band frequency union; co-channel interference mapping;
+outdoor OSM sandbox foundation). v2 physics config is scaffolded in
+`phase_a.py` under `V2` (inert until `PHYSICS_VARIANT="v2.0"`).
+
 ## Quick start
 
 ```bash
