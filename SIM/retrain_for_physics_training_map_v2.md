@@ -395,7 +395,7 @@ which is exactly why it lives in the manifest).
 
 Upload SIM/dataset/ to Drive (any top-2-level folder; the notebook
 auto-finds shard_*.npz). Open
-`SIM/phase_c_train_colab_v3.ipynb` FRESH from GitHub (clobber rule!), GPU
+`SIM V2/phase_c_train_colab_v3.ipynb` FRESH from GitHub (clobber rule!), GPU
 runtime, Run all. Delete any stale `unet9_seed*_resume.pt` in
 MyDrive/SIM/checkpoints first (or it will resume the OLD run — the resume
 file self-deletes only on clean early-stop). QUICK=True first for one seed;

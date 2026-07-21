@@ -50,5 +50,5 @@ stalled). grid and walkable-mask SHA-256 prefixes are recorded in
 manifest.json and must match between dataset, training run, and web deploy.
 Model ships as GitHub release `surrogate-v1` (fp32, 124 MB, opset 17).
 
-**Superseded by:** `MODEL_CARD_v2.md` describes the planned sim-v2.0
+**Superseded by:** `../SIM V2/MODEL_CARD_V2.md` describes the planned sim-v2.0
 (enhanced Motley-Keenan). v1 remains the deployed, validated baseline.
