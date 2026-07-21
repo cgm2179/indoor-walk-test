@@ -262,10 +262,18 @@
           color: var(--accent); border-radius: 6px; padding: 0 5px;
           font-size: 0.68rem; font-weight: 700; vertical-align: 1px; }
         #spectrumPanel .dim { color: var(--muted); }
+        .arfcn-btn { display: block; width: 100%; margin: 0 0 5px; appearance: none;
+          border: 1px solid var(--line); background: #fff; border-radius: 8px;
+          padding: 6px 8px; font-size: 0.74rem; text-align: left; cursor: pointer;
+          color: var(--ink); line-height: 1.3; }
+        .arfcn-btn:hover { background: #eef6f4; border-color: var(--accent); }
+        .arfcn-btn b { color: var(--accent); }
       </style>
 
       <button type="button" id="spectrumToggle">📡 Local Spectrum &amp; Channel Reference ▸</button>
       <div id="spectrumPanel">
+        <h4>Observed ARFCNs — click to filter the map</h4>
+        <div id="arfcnList"></div>
         <h4>Verizon</h4>
         <ul>
           <li>LTE <b>B13</b> 700 MHz — EARFCN 5230</li>
@@ -1563,6 +1571,59 @@
           ? '📡 Local Spectrum & Channel Reference ▸'
           : '📡 Local Spectrum & Channel Reference ▾';
       });
+
+      // ---- Observed ARFCN buttons: channel number + provider + (count) ----
+      // ARFCNs are derived from the measured frequency via the 3GPP rasters:
+      // NR global raster (5 kHz below 3 GHz, 15 kHz above), LTE per-band
+      // EARFCN offsets. All measured traffic is T-Mobile (MCC 310 / MNC 260).
+      var LTE_OFFS = { 2:[600,1930], 4:[1950,2110], 5:[2400,869], 12:[5010,729],
+        13:[5180,746], 14:[5280,758], 17:[5730,734], 25:[8040,1930],
+        30:[9770,2350], 41:[39650,2496], 66:[66436,2110], 71:[68586,617] };
+      function arfcnOf(network, band, freq) {
+        if (network === 'lte') {
+          var o = LTE_OFFS[band];
+          if (!o) return { label: 'EARFCN ?', n: null };
+          return { label: 'EARFCN', n: Math.round(o[0] + (freq - o[1]) * 10) };
+        }
+        var n = freq < 3000 ? Math.round(freq * 200)
+                            : 600000 + Math.round((freq - 3000) * 1000 / 15);
+        return { label: 'NR-ARFCN', n: n };
+      }
+      function bandName(network, band) {
+        return (network === 'lte' ? 'B' : 'n') + band;
+      }
+      try {
+        var groups = {};
+        timeseriesRecords.forEach(function (r) {
+          if (r.freq == null || !isFinite(r.freq)) return;   // skip blank freq
+          var k = r.network + '|' + r.band + '|' + r.freq;
+          (groups[k] = groups[k] || { network: r.network, band: r.band,
+                                      freq: r.freq, count: 0 }).count++;
+        });
+        var list = Object.values(groups).sort(function (a, b) { return b.count - a.count; });
+        var host = document.getElementById('arfcnList');
+        list.forEach(function (g) {
+          var a = arfcnOf(g.network, g.band, g.freq);
+          var el = document.createElement('button');
+          el.type = 'button';
+          el.className = 'arfcn-btn';
+          el.innerHTML = '<b>' + a.label + (a.n !== null ? ' ' + a.n : '') +
+            '</b> · T-Mobile ' + bandName(g.network, g.band) + ' · ' +
+            g.freq.toFixed(1) + ' MHz <b>(' + g.count + ')</b>';
+          el.addEventListener('click', function () {
+            var fire = function (id, v) {
+              var s = document.getElementById(id);
+              s.value = v;
+              s.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            fire('network', g.network);
+            fire('band', String(g.band));
+            fire('pci', 'all');
+            fire('channel', String(g.freq));
+          });
+          host.appendChild(el);
+        });
+      } catch (e) { console.error('[spectrum] ARFCN list failed:', e); }
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js" defer></script>
