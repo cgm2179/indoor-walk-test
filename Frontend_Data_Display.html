@@ -213,6 +213,11 @@
         <select id="channel"></select>
       </div>
 
+      <div class="field">
+        <label>Observed ARFCNs — click to filter</label>
+        <div id="arfcnList"></div>
+      </div>
+
       <div class="field checkbox-field">
         <label for="logTime"><input id="logTime" type="checkbox" /> Log scale (elapsed time)</label>
       </div>
@@ -272,8 +277,6 @@
 
       <button type="button" id="spectrumToggle">📡 Local Spectrum &amp; Channel Reference ▸</button>
       <div id="spectrumPanel">
-        <h4>Observed ARFCNs — click to filter the map</h4>
-        <div id="arfcnList"></div>
         <h4>Verizon</h4>
         <ul>
           <li>LTE <b>B13</b> 700 MHz — EARFCN 5230</li>
