@@ -11,7 +11,7 @@ their constants from it.
 |---|---|---|
 | A — physics generator | `phase_a.py` | ✅ tests pass, 0.5 s/map (target ≤2 s) |
 | B — dataset (10,000 pairs) | `phase_b_dataset.py` | ✅ generator + splits + leakage audit |
-| C — UNet training | `../SIM V2/phase_c_train_colab_v3.ipynb` | ▶ run on Colab (GPU) |
+| C — UNet training | `phase_c_train_colab_v3.ipynb` | ▶ run on Colab (GPU) |
 | D — calibration vs G-flex | `phase_d_calibrate.py` | ⛔ blocked: needs walk with known Tx |
 | E — placement optimizer | `phase_e_optimizer.py` | ✅ + in-browser version |
 | F — export & Simulator tab | `export_web_assets.py`, `web/` | ✅ live in Frontend_Data_Display.html |
@@ -35,7 +35,7 @@ solves, train the surrogate:
 
 1. Upload `SIM/dataset/` to Google Drive as `indoor-walk-test-dataset/`
    (~0.5 GB; it is gitignored).
-2. Run `SIM/../SIM V2/phase_c_train_colab_v3.ipynb` on Colab (GPU). It trains with
+2. Run `SIM/phase_c_train_colab_v3.ipynb` on Colab (GPU). It trains with
    seeds {0,1,2}, compares against FSPL / fitted log-distance / 3GPP 38.901
    InH baselines, and exports `pl_unet.onnx` after a ≤0.1 dB parity check.
 3. Drop the file at `SIM/web/pl_unet.onnx`. The tab auto-upgrades

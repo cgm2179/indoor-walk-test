@@ -274,7 +274,7 @@ Each maps to the retrain cascade in `retrain_for_physics_training_map_v2.md`.
 5. **Frequency plan**: 9-anchor union (§4); widen freq normalization.
 6. **Dataset** (cascade A/C): `make dataset` with the new physics/classes;
    audit; re-check clip stats (20 dB glass will shift them).
-7. **Train**: `SIM V2/phase_c_train_colab_v3.ipynb`, adjust IN_CH; seeds {0,1,2}.
+7. **Train**: `SIM V2/phase_c_v2_train.ipynb` (IN_CH=10, 7-class); seeds {0,1,2}.
 8. **Calibrate** (Phase D) if a known-Tx walk exists: fit L_ref + γ,
    regenerate, fine-tune.
 9. **Deploy**: export ONNX (single-file, >50 MB, parity ≤0.1 dB); `make

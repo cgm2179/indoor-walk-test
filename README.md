@@ -8,8 +8,8 @@ plus the ranked list of known-wrong things. Rasterization improvement roadmap:
 grid: **[SIM/retrain_for_physics_training_map_v2.md](SIM/retrain_for_physics_training_map_v2.md)**
 — the full runbook plus the complete v1 chronicle and error->fix table.
 Next-generation plan (enhanced Motley-Keenan, 20 dB low-E facade, outdoor
-foundation): **[SIM V2/MODEL_CARD_V2.md](SIM%20V2/MODEL_CARD_V2.md)**. The v2
-training notebooks live in `SIM V2/`.
+foundation): **[SIM V2/MODEL_CARD_V2.md](SIM%20V2/MODEL_CARD_V2.md)**. The v2 phase notebooks (enhanced-MK physics, v2 dataset, v2 training)
+live in `SIM V2/`; the v1 training notebooks stay in `SIM/`.
 
 **Reproducing from a fresh clone**: `make model` (trained surrogate, release
 `surrogate-v1`) · `make dataset-fetch` (training data, release `dataset-v1`)
@@ -20,7 +20,7 @@ dashboard with VS Code Live Preview or `python3 -m http.server`.
 
 | Path | What it is |
 |---|---|
-| **`SIM/`** | The current project: physics generator (Phase A), dataset (B), Colab training (`../SIM V2/phase_c_train_colab_v3.ipynb`), calibration scaffold (D), optimizer (E), web assets (F). Start at [SIM/README.md](SIM/README.md). |
+| **`SIM/`** | The current project: physics generator (Phase A), dataset (B), Colab training (`phase_c_train_colab_v3.ipynb`), calibration scaffold (D), optimizer (E), web assets (F). Start at [SIM/README.md](SIM/README.md). |
 | **`Frontend_Data_Display.html`** | The dashboard — walk-test viewer + the **Simulator** tab. Serve with `python3 -m http.server 8432` and open in a browser. Needs `timeseries_data.js` and `SIM/web/` (both here). |
 | `STEP_1/`, `STEP_2/` | Upstream inputs the SIM pipeline reads: the rasterized material grid, consolidation, walk-test heatmaps. Re-run only when the floor plan or material table changes. |
 | `7th_Floor_...V2.2.png` + `.TAB` + `.aux.xml` + `_PseudoMercator.csv` | Source ground truth: the georeferenced floor plan and its QGIS control points. Everything derives from these. |
