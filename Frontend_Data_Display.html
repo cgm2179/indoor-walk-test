@@ -244,6 +244,63 @@
 
       <div class="stats" id="stats"></div>
       <span class="pill">Affine RMSE: 0.00px</span>
+
+      <style>
+        #spectrumToggle { display: block; width: 100%; margin-top: 14px;
+          appearance: none; border: 1px solid var(--line); background: #fff;
+          color: var(--accent); font-weight: 600; font-size: 0.86rem;
+          padding: 9px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+        #spectrumToggle:hover { background: #eef6f4; }
+        #spectrumPanel { display: none; margin-top: 10px; padding: 10px 12px;
+          border: 1px solid var(--line); border-radius: 10px; background: #fbfdfc;
+          font-size: 0.78rem; line-height: 1.45; color: var(--ink); }
+        #spectrumPanel h4 { margin: 10px 0 4px; font-size: 0.8rem; color: var(--accent); }
+        #spectrumPanel h4:first-child { margin-top: 0; }
+        #spectrumPanel ul { margin: 0 0 4px 0; padding-left: 16px; }
+        #spectrumPanel li { margin-bottom: 3px; }
+        #spectrumPanel .obs { display: inline-block; background: #e7f4f2;
+          color: var(--accent); border-radius: 6px; padding: 0 5px;
+          font-size: 0.68rem; font-weight: 700; vertical-align: 1px; }
+        #spectrumPanel .dim { color: var(--muted); }
+      </style>
+
+      <button type="button" id="spectrumToggle">📡 Local Spectrum &amp; Channel Reference ▸</button>
+      <div id="spectrumPanel">
+        <h4>Verizon</h4>
+        <ul>
+          <li>LTE <b>B13</b> 700 MHz — EARFCN 5230</li>
+          <li>LTE <b>B4/B66</b> AWS 1700/2100 — e.g. EARFCN 66465</li>
+          <li>LTE <b>B2</b> PCS 1900 MHz</li>
+          <li class="dim">5G NR: n5 (850), C-band n77</li>
+        </ul>
+        <h4>AT&amp;T</h4>
+        <ul>
+          <li>LTE <b>B12/B17</b> 700 MHz</li>
+          <li>LTE <b>B14</b> 700 MHz (FirstNet public safety)</li>
+          <li>LTE <b>B2/B4/B66/B30</b> (PCS / AWS / 2.3 GHz WCS)</li>
+          <li class="dim">5G NR: n5, C-band n77</li>
+        </ul>
+        <h4>T-Mobile <span class="obs">measured in this walk</span></h4>
+        <ul>
+          <li>LTE/NR <b>B71/n71</b> 600 MHz <span class="obs">seen @ 619 MHz</span></li>
+          <li>LTE/NR <b>B2/n25</b> PCS 1900 MHz <span class="obs">seen</span></li>
+          <li>NR <b>n41</b> 2.5 GHz TDD <span class="obs">seen @ 2506 MHz</span></li>
+          <li class="dim">C-band <b>n77</b> <span class="obs">seen @ 3871 MHz</span></li>
+        </ul>
+        <h4>5G NR band notes</h4>
+        <ul>
+          <li>Mid-band C-band <b>n77/n78</b> (3.3–4.2 GHz) and low-band
+            <b>n5/n71</b> operate dynamically across shifting local raster
+            points (NR-ARFCN global raster), so exact channel numbers vary
+            by market and carrier aggregation config.</li>
+          <li class="dim">EARFCN ↔ frequency: f<sub>DL</sub> = F<sub>DL-low</sub> +
+            0.1·(EARFCN − N<sub>offs-DL</sub>) MHz; NR-ARFCN uses the 5/15/60 kHz
+            global raster.</li>
+          <li class="dim">This walk test observed T-Mobile only (MCC 310 / MNC 260),
+            619.35–3 871.2 MHz, NR band mix n41 (1 461 rows), n71 (1 042),
+            n25 (948), n2 (647).</li>
+        </ul>
+      </div>
     </aside>
 
     <section id="plotPanel" class="panel fade-in">
@@ -1494,6 +1551,19 @@
     updateMetricCounts();
     applyDefaults(metricEl.value, filtered(metricEl.value));
     refresh();
+  </script>
+  <script>
+    (function () {
+      var btn = document.getElementById('spectrumToggle');
+      var panel = document.getElementById('spectrumPanel');
+      btn.addEventListener('click', function () {
+        var open = panel.style.display === 'block';
+        panel.style.display = open ? 'none' : 'block';
+        btn.textContent = open
+          ? '📡 Local Spectrum & Channel Reference ▸'
+          : '📡 Local Spectrum & Channel Reference ▾';
+      });
+    })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js" defer></script>
   <script src="SIM/web/sim_assets.js?v=3"></script>
