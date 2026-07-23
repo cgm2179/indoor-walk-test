@@ -110,10 +110,10 @@ def write_manifest(grid, walkable, inside, cell, mpp0, out, repo):
         cell_size_m=round(float(cell), 6),
         floor_rows=[int(rows_present[0]), int(rows_present[-1] + 1)],
         n_classes=7,
-        channels=["onehot_air", "onehot_drywall", "onehot_concrete",
-                  "onehot_core", "onehot_furniture", "onehot_exterior_lowE",
-                  "onehot_interior_glass", "tx_gaussian_sigma2",
-                  "freq_feature", "log10_distance_m_over3"],
+        # channel names derived from the material names so the trainer's
+        # assert manifest['channels'] == [f'onehot_{m.name}' ...] holds
+        channels=[f"onehot_{m['name']}" for m in P.MATERIALS7] +
+                 ["tx_gaussian_sigma2", "freq_feature", "log10_distance_m_over3"],
         in_channels=10,           # 7 one-hot classes + tx + freq + dist
         in_ch=10,                 # alias (older readers)
         tx_blob_sigma_cells=2.0,
