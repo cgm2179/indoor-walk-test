@@ -168,9 +168,14 @@ class TorchScene:
     def __init__(self, grid, inside, cell_size_m, materials=None,
                  freqs_mhz=None, device="cuda", n_edges=8, n_relay_cache=16,
                  edge_radius=3, precompute=True, lut=None,
-                 relay_dtype=torch.float16):
+                 relay_dtype=torch.float16,
+                 obs_solidity=1.0, obs_ceiling_db=0.0):
         if torch is None:
             raise RuntimeError("torch is required for the GPU backend")
+        # effective-obstruction correction (see engine_v2.effective_obstruction);
+        # defaults no-op so parity/self-tests are unaffected
+        self.obs_solidity = float(obs_solidity)
+        self.obs_ceiling_db = float(obs_ceiling_db)
         self.device = torch.device(device)
         self.cell = float(cell_size_m)
         self.materials = materials if materials is not None else P.MATERIALS7
@@ -368,6 +373,11 @@ class TorchScene:
             acc = torch.zeros((nf, n_cell), dtype=torch.float32, device=d)
             acc.index_add_(1, si_r, per)
             out.index_add_(1, sel, acc)
+        if self.obs_ceiling_db > 0:
+            out = self.obs_ceiling_db * torch.tanh(
+                (self.obs_solidity * out) / self.obs_ceiling_db)
+        elif self.obs_solidity != 1.0:
+            out = self.obs_solidity * out
         return out.reshape(nf, H, W)
 
     def select_edges(self, obs_ref):

@@ -116,14 +116,24 @@ def write_manifest(grid, walkable, inside, cell, mpp0, out, repo):
         in_ch=10,
         tx_blob_sigma_cells=2.0,
         dist_channel_norm=3.0,
-        # widened clip: frequency-scaled 5.5/6 GHz losses are genuinely large
-        # (indoor p99.9 ~300 dB at 6 GHz), so [40,170] would clip ~half the map
-        norm=dict(pl_min_db=40.0, pl_range_db=190.0,
+        # clip [40,170] (as v1): after the effective-obstruction calibration the
+        # indoor p99.9 is ~141 dB, so this window clips <0.1% while giving good
+        # float16 resolution. (Raw uncalibrated physics needed [40,230]; the
+        # calibration is what makes the tight window correct.)
+        norm=dict(pl_min_db=40.0, pl_range_db=130.0,
                   freq_log_lo_mhz=619.0, freq_log_hi_mhz=6125.0),
         physics=dict(model="enhanced_motley_keenan_v2",
                      source="ITU-R P.2040 permittivity + Fresnel slab (angle+"
                             "thickness) + low-E resistive sheet + UTD diffraction",
-                     n_exp=2.0, d0_m=1.0, saturation="none (UTD supplies shadow)",
+                     n_exp=2.0, d0_m=1.0,
+                     # effective-obstruction calibration (engine_v2.effective_
+                     # obstruction): corrects dense-floor straight-ray over-count
+                     # from missing doorways. ITU-P.1238-anchored; refine in
+                     # Phase D. Validated: indoor median 77-130 dB across 9 bands,
+                     # 52 dB freq slope, 55 dB dynamic range, 0% clip, -88 dBm
+                     # @2600 for a 23 dBm Tx (beats measured outdoor donor).
+                     obs_solidity=0.35, obs_ceiling_db=55.0,
+                     saturation="soft tanh ceiling 55 dB + solidity 0.35",
                      doc="SIM V2/v2_physics.pdf"),
         freqs_mhz=list(P.FREQS_MHZ_V2),
         materials=[dict(id=m["id"], name=m["name"],

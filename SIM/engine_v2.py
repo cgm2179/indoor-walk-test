@@ -214,6 +214,39 @@ def _longest_circular_run(b):
 # ---------------------------------------------------------------------------
 # the ray tracer
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# EFFECTIVE OBSTRUCTION — dense-floor / missing-doorway correction
+# ---------------------------------------------------------------------------
+# The raw straight-ray obstruction sums the full solid-wall loss of EVERY
+# partition the ray crosses. On this floor the median indoor cell's ray crosses
+# ~9 wall runs, so the sum reaches 170-350 dB at mid/high band -- physically
+# impossible (ITU-R P.1238 office is ~90 dB @3.5 GHz; v1 was already ~148 with
+# its own cap). The cause is geometric, not per-material: real energy routes
+# through DOORWAYS and corridors the raster lacks, crossing far fewer SOLID
+# walls than the straight ray implies.
+#
+# Correction, two physically-motivated parameters:
+#   solidity   in (0,1] : fraction of the summed solid-wall loss the dominant
+#                         path actually incurs (the rest is doorways/gaps/
+#                         routing). ~0.35 here -> effective ~3 of 9 crossings.
+#   ceiling_db          : soft bound on total obstruction (a smooth tanh), the
+#                         "an alternate path always exists" limit that stops
+#                         deep-shadow cells from running to 300+ dB.
+# obs_eff = ceiling * tanh(solidity * obs / ceiling).  For small obs this is
+# ~solidity*obs (near-Tx structure preserved); it saturates smoothly to ceiling.
+#
+# These are CALIBRATION constants (literature-plausible, ITU-anchored), not yet
+# fit to this building -- Phase D refines them from a known-Tx walk. Defaults
+# are a no-op (solidity=1, ceiling=0) so the physics/geometry self-tests, which
+# assert raw per-crossing values, are unaffected.
+def effective_obstruction(obs, solidity=1.0, ceiling_db=0.0):
+    if ceiling_db and ceiling_db > 0:
+        return ceiling_db * np.tanh((solidity * obs) / ceiling_db)
+    if solidity != 1.0:
+        return solidity * obs
+    return obs
+
+
 def fspl_1m_db(f_mhz):
     """Free-space loss at 1 m.  32.44 + 20log10(f_MHz) - 60."""
     return 32.44 + 20.0 * np.log10(np.asarray(f_mhz, float)) - 60.0
@@ -227,7 +260,13 @@ class SceneV2:
 
     def __init__(self, grid, inside, cell_size_m, lut=None, materials=None,
                  freqs_mhz=None, n_edges=8, edge_radius=3, n_relay_cache=24,
-                 precompute=True, relay_dtype=np.float16):
+                 precompute=True, relay_dtype=np.float16,
+                 obs_solidity=1.0, obs_ceiling_db=0.0):
+        # obs_solidity / obs_ceiling_db: effective-path correction for the
+        # dense straight-ray obstruction (see EFFECTIVE_OBSTRUCTION note below).
+        # Defaults are a no-op so the physics/parity self-tests are unaffected.
+        self.obs_solidity = float(obs_solidity)
+        self.obs_ceiling_db = float(obs_ceiling_db)
         self.grid = np.ascontiguousarray(grid.astype(np.uint8))
         self.inside = inside
         self.cell = float(cell_size_m)
@@ -408,6 +447,7 @@ class SceneV2:
             for fi in range(nf):
                 np.add.at(out[fi], sel, np.bincount(
                     si_r, weights=per[fi], minlength=n_cell))
+        out = effective_obstruction(out, self.obs_solidity, self.obs_ceiling_db)
         return out.reshape(nf, H, W)
 
     def direct_maps(self, tx_xy, obstruction=None):

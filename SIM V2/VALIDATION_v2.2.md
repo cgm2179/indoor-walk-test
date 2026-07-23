@@ -94,9 +94,54 @@ then option 2 when a known-Tx walk exists. Do **not** generate the full
 dataset until the median indoor PL at 3.5 GHz is in a physical range
 (~100–140 dB, near-zero clip).
 
-## Status
-- Pipeline: **runnable** (missing scripts written, engines placed, smoke green).
-- Physics: **correct in isolation, mis-scaled for this floor** — fix the
-  obstruction blow-up before generating. The generator, sharding, splits,
-  audit, and phase_c consumption are all validated and ready for the corrected
-  physics.
+## 3b. RESOLUTION — effective-obstruction calibration (FIXED, validated)
+
+The over-count is **geometric**: the median indoor cell's straight ray crosses
+**9 wall runs** (measured), but real energy routes through doorways/corridors
+the raster lacks, crossing far fewer *solid* walls. So the fix is not a brute
+cap (which flattens everything) but a two-parameter effective-path correction,
+added to both engines as `engine_v2.effective_obstruction` (default no-op, so
+all 37 self-tests + parity still pass):
+
+```
+obs_eff = ceiling · tanh( solidity · obs / ceiling )
+```
+- **solidity 0.35** — fraction of the summed solid-wall loss the dominant path
+  actually incurs (the rest is doorways/routing); ~3 effective crossings of 9.
+- **ceiling 55 dB** — soft "an alternate path always exists" bound; stops
+  deep-shadow cells running to 300+ dB. `tanh` keeps small obstruction ~linear,
+  so near-Tx structure is preserved.
+
+Tuned to ITU-R P.1238 office plausibility, then **cross-validated over 5 random
+transmitters with full diffraction** (`validate_v2_physics.py`, a re-runnable
+test case). Result — indoor path loss, calibrated:
+
+| band | p10 | median | p90 | clip |
+|---|---|---|---|---|
+| 619 | 54 | 77 | 102 | 0% |
+| 2600 | 72 | 111 | 129 | 0% |
+| 3500 | 77 | 118 | 133 | 0% |
+| 6125 | 90 | 130 | 138 | 0% |
+
+All gates pass: median within physical windows, **monotonic in frequency**,
+**52 dB** frequency slope (physical ~35–55), **55 dB** dynamic range (structure
+preserved, not flattened), **0% clip**, and the scanner absolute bound holds —
+an indoor 23 dBm Tx gives median **−88 dBm @2600**, correctly just beating the
+measured outdoor-donor **−93 dBm** (indoor source is closer than a distant
+macro). Clip window tightened back to [40,170] (v1's) since p99.9 is now 141 dB.
+
+**Note on the scanner metric:** the per-band median RSRP is *donor-dominated*,
+not propagation — adjacent 617/627 MHz channels differ by 23 dB because they
+are different cells, so a clean quantitative frequency slope is not extractable.
+The defensible scanner check is the **absolute bound** above. Rigorous
+per-material calibration still needs a known-Tx walk (Phase D); `solidity`/
+`ceiling` are ITU-anchored placeholders the `jitter` field makes a fine-tune.
+
+## Status — READY (with the honest caveat)
+- Pipeline: **runnable and validated** end to end (CPU smoke green, calibrated
+  targets 77–131 dB, 0% clip). Wired through `manifest_v2.json` (R6).
+- Physics: **calibrated to physical plausibility**, passing the re-runnable
+  cross-validation. Constants are literature/ITU-anchored, not yet fit to this
+  building — Phase D refines them. Safe to generate the full dataset on GPU.
+- Before the full run: `phase_a_v2 --prepare` (writes grid+manifest),
+  `validate_v2_physics.py` (must print PASSED), then generate.

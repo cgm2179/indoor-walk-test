@@ -27,7 +27,7 @@
   "dist_channel_norm": 3.0,
   "norm": {
     "pl_min_db": 40.0,
-    "pl_range_db": 190.0,
+    "pl_range_db": 130.0,
     "freq_log_lo_mhz": 619.0,
     "freq_log_hi_mhz": 6125.0
   },
@@ -36,7 +36,9 @@
     "source": "ITU-R P.2040 permittivity + Fresnel slab (angle+thickness) + low-E resistive sheet + UTD diffraction",
     "n_exp": 2.0,
     "d0_m": 1.0,
-    "saturation": "none (UTD supplies shadow)",
+    "obs_solidity": 0.35,
+    "obs_ceiling_db": 55.0,
+    "saturation": "soft tanh ceiling 55 dB + solidity 0.35",
     "doc": "SIM V2/v2_physics.pdf"
   },
   "freqs_mhz": [

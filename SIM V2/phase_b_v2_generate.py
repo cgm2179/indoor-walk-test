@@ -79,11 +79,13 @@ def make_splits(pos, inside, rng):
     return {k: sorted(v) for k, v in idx.items()}
 
 
-def build_scene(grid, inside, cell, freqs, device, n_relay_cache=16):
+def build_scene(grid, inside, cell, freqs, device, n_relay_cache=16,
+                obs_solidity=1.0, obs_ceiling_db=0.0):
     import torch  # noqa
     import engine_v2_torch as ET
     return ET.TorchScene(grid, inside, cell, freqs_mhz=freqs, device=device,
-                         n_relay_cache=n_relay_cache)
+                         n_relay_cache=n_relay_cache,
+                         obs_solidity=obs_solidity, obs_ceiling_db=obs_ceiling_db)
 
 
 def generate(args, manifest):
@@ -119,8 +121,11 @@ def generate(args, manifest):
     jvals[~jflag] = 1.0
     jvals[:, 0] = 1.0                                  # air never jitters
 
+    phys = manifest.get("physics", {})
     scene = build_scene(grid, inside, cell, freqs, args.device,
-                        n_relay_cache=(4 if args.smoke else 16))
+                        n_relay_cache=(4 if args.smoke else 16),
+                        obs_solidity=phys.get("obs_solidity", 1.0),
+                        obs_ceiling_db=phys.get("obs_ceiling_db", 0.0))
     ff = ((np.log10(np.asarray(freqs)) - f_lo) / (f_hi - f_lo)).astype(np.float32)
     H, W = grid.shape
 
