@@ -160,10 +160,15 @@ def generate(args, manifest):
         print(f"shard {s + 1}/{n_shards}: {p1 - p0} positions -> {shard_path.name}",
               flush=True)
 
-    (out / "dataset_v2_meta.json").write_text(json.dumps(dict(
+    meta = dict(
         n_positions=n_pos, freqs_mhz=freqs, seed=SEED, n_classes=N_CLASSES,
-        clip_db=[pl_lo, pl_lo + pl_rng], grid_sha256=manifest.get("grid_sha256"),
-        engine="enhanced_motley_keenan_v2"), indent=2))
+        clip_db=[pl_lo, pl_lo + pl_rng],
+        manifest_grid_sha=manifest.get("grid_sha256"),   # name the trainer reads
+        grid_sha256=manifest.get("grid_sha256"),         # alias
+        engine="enhanced_motley_keenan_v2")
+    # write both filenames so either the trainer's or the older name resolves
+    (out / "dataset_meta_v2.json").write_text(json.dumps(meta, indent=2))
+    (out / "dataset_v2_meta.json").write_text(json.dumps(meta, indent=2))
     print("generation complete", flush=True)
 
 
