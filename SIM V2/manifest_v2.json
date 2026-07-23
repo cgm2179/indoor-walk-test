@@ -1,0 +1,121 @@
+{
+  "version": "sim-v2.0",
+  "grid_shape": [
+    256,
+    448
+  ],
+  "cell_size_m": 0.174365,
+  "floor_rows": [
+    32,
+    224
+  ],
+  "n_classes": 7,
+  "channels": [
+    "onehot_air",
+    "onehot_drywall",
+    "onehot_concrete",
+    "onehot_core",
+    "onehot_furniture",
+    "onehot_exterior_lowE",
+    "onehot_interior_glass",
+    "tx_gaussian_sigma2",
+    "freq_feature",
+    "log10_distance_m_over3"
+  ],
+  "in_ch": 10,
+  "tx_blob_sigma_cells": 2.0,
+  "dist_channel_norm": 3.0,
+  "norm": {
+    "pl_min_db": 40.0,
+    "pl_range_db": 190.0,
+    "freq_log_lo_mhz": 619.0,
+    "freq_log_hi_mhz": 6125.0
+  },
+  "physics": {
+    "model": "enhanced_motley_keenan_v2",
+    "source": "ITU-R P.2040 permittivity + Fresnel slab (angle+thickness) + low-E resistive sheet + UTD diffraction",
+    "n_exp": 2.0,
+    "d0_m": 1.0,
+    "saturation": "none (UTD supplies shadow)",
+    "doc": "SIM V2/v2_physics.pdf"
+  },
+  "freqs_mhz": [
+    619.0,
+    627.0,
+    1935.0,
+    2442.0,
+    2510.0,
+    2600.0,
+    3500.0,
+    5500.0,
+    6125.0
+  ],
+  "materials": [
+    {
+      "id": 0,
+      "name": "air",
+      "p2040": null,
+      "t_ref_m": 0.0,
+      "r_sheet_ohm_sq": null,
+      "per_metre": false,
+      "color": "#ffffff"
+    },
+    {
+      "id": 1,
+      "name": "drywall_partition",
+      "p2040": "plasterboard",
+      "t_ref_m": 0.026,
+      "r_sheet_ohm_sq": null,
+      "per_metre": false,
+      "color": "#f5a623"
+    },
+    {
+      "id": 2,
+      "name": "concrete_masonry",
+      "p2040": "concrete",
+      "t_ref_m": 0.2,
+      "r_sheet_ohm_sq": null,
+      "per_metre": false,
+      "color": "#404040"
+    },
+    {
+      "id": 3,
+      "name": "core_service_area",
+      "p2040": "concrete",
+      "t_ref_m": 0.2,
+      "r_sheet_ohm_sq": null,
+      "per_metre": false,
+      "color": "#c81e1e"
+    },
+    {
+      "id": 4,
+      "name": "furniture_clutter",
+      "p2040": "wood",
+      "t_ref_m": 1.0,
+      "r_sheet_ohm_sq": null,
+      "per_metre": true,
+      "color": "#bed2ff"
+    },
+    {
+      "id": 5,
+      "name": "exterior_glass_lowE",
+      "p2040": "glass",
+      "t_ref_m": 0.006,
+      "r_sheet_ohm_sq": 25.0,
+      "per_metre": false,
+      "color": "#1e3ca0"
+    },
+    {
+      "id": 6,
+      "name": "interior_glass",
+      "p2040": "glass",
+      "t_ref_m": 0.01,
+      "r_sheet_ohm_sq": null,
+      "per_metre": false,
+      "color": "#7ec8e3"
+    }
+  ],
+  "scale_status": "literature (P.2040 + fitted sub-resolution excess); NOT yet calibrated to this building (Phase D fits it)",
+  "grid_sha256": "0831cc022e542ea7",
+  "walkable_mask_sha256": "d3b843660df5ee89"
+}

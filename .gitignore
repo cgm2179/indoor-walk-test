@@ -6,3 +6,7 @@ SIM/web/pl_unet.onnx
 ARCHIVE/raw_walk_data/STEP_1.zip
 ARCHIVE/superseded/STEP_4/dataset/
 .claude/
+SIM V2/grid_model_v2.npy
+SIM V2/inside_mask_v2.npy
+SIM V2/walkable_mask_v2.npy
+SIM V2/dataset_v2/
