@@ -30,6 +30,7 @@ from pathlib import Path
 import numpy as np
 from scipy import ndimage
 
+
 H_MODEL, W_MODEL = 256, 448
 
 # 8-class STEP_2 -> 7-class model. Only difference from v1's FOLD_8_TO_6:
@@ -113,7 +114,8 @@ def write_manifest(grid, walkable, inside, cell, mpp0, out, repo):
                   "onehot_core", "onehot_furniture", "onehot_exterior_lowE",
                   "onehot_interior_glass", "tx_gaussian_sigma2",
                   "freq_feature", "log10_distance_m_over3"],
-        in_ch=10,
+        in_channels=10,           # 7 one-hot classes + tx + freq + dist
+        in_ch=10,                 # alias (older readers)
         tx_blob_sigma_cells=2.0,
         dist_channel_norm=3.0,
         # clip [40,170] (as v1): after the effective-obstruction calibration the
